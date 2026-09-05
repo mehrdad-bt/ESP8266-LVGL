@@ -33,9 +33,9 @@ void create_screen_main() {
             // Voltage
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.voltage = obj;
-            lv_obj_set_pos(obj, 123, 88);
+            lv_obj_set_pos(obj, 83, 44);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Main Page");
+            lv_label_set_text_static(obj, "Voltage");
         }
         {
             lv_obj_t *obj = lv_btn_create(parent_obj);
@@ -52,17 +52,6 @@ void create_screen_main() {
                     lv_label_set_text_static(obj, "Next");
                 }
             }
-        }
-        {
-            lv_obj_t *obj = lv_arc_create(parent_obj);
-            lv_obj_set_pos(obj, 25, 16);
-            lv_obj_set_size(obj, 85, 104);
-            lv_arc_set_value(obj, 25);
-        }
-        {
-            lv_obj_t *obj = lv_spinner_create(parent_obj, 1000, 60);
-            lv_obj_set_pos(obj, 223, 16);
-            lv_obj_set_size(obj, 80, 80);
         }
         {
             lv_obj_t *obj = lv_btn_create(parent_obj);
@@ -84,9 +73,17 @@ void create_screen_main() {
             // Current
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.current = obj;
-            lv_obj_set_pos(obj, 144, 120);
+            lv_obj_set_pos(obj, 81, 68);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Text");
+            lv_label_set_text_static(obj, "Current");
+        }
+        {
+            lv_obj_t *obj = lv_led_create(parent_obj);
+            objects.obj0 = obj;
+            lv_obj_set_pos(obj, 233, 44);
+            lv_obj_set_size(obj, 32, 32);
+            lv_led_set_color(obj, lv_color_hex(0x0000ff));
+            lv_led_set_brightness(obj, 255);
         }
     }
     
@@ -126,7 +123,7 @@ void create_screen_page_2() {
         }
         {
             lv_obj_t *obj = lv_led_create(parent_obj);
-            objects.obj0 = obj;
+            objects.obj1 = obj;
             lv_obj_set_pos(obj, 262, 88);
             lv_obj_set_size(obj, 32, 32);
             lv_led_set_color(obj, lv_color_hex(0xff0000));

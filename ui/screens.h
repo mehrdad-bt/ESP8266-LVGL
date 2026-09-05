@@ -22,6 +22,7 @@ typedef struct _objects_t {
     lv_obj_t *voltage;
     lv_obj_t *current;
     lv_obj_t *obj0;
+    lv_obj_t *obj1;
 } objects_t;
 
 extern objects_t objects;

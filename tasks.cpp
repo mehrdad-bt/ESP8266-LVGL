@@ -23,6 +23,8 @@ static uint32_t last_lvgl = 0;
 static float voltage = 0.0f;
 static float current = 0.0f;
 
+static bool data_received = false;
+
 
 // ==================================================
 // DISPLAY TEXT
@@ -33,12 +35,37 @@ static char current_text[32];
 
 
 // ==================================================
+// LIMITS
+// ==================================================
+
+#define VOLTAGE_MIN 20.0f
+#define VOLTAGE_MAX 25.0f
+
+#define CURRENT_MIN 0.0f
+#define CURRENT_MAX 1.0f
+
+
+// ==================================================
 // TASK INITIALIZATION
 // ==================================================
 
 void tasks_init(void)
 {
     last_lvgl = millis();
+
+    // ----------------------------------------------
+    // Initial LED state
+    // ----------------------------------------------
+
+    if (objects.obj0 != NULL)
+    {
+        lv_led_set_color(
+            objects.obj0,
+            lv_color_hex(0x0000FF)
+        );
+
+        lv_led_on(objects.obj0);
+    }
 }
 
 
@@ -62,8 +89,10 @@ void tasks_run(void)
 
     if (uart_get_values(&voltage, &current))
     {
+        data_received = true;
+
         // ------------------------------------------
-        // Voltage
+        // Voltage text
         // ------------------------------------------
 
         snprintf(
@@ -74,7 +103,7 @@ void tasks_run(void)
         );
 
         // ------------------------------------------
-        // Current
+        // Current text
         // ------------------------------------------
 
         snprintf(
@@ -85,7 +114,7 @@ void tasks_run(void)
         );
 
         // ------------------------------------------
-        // Update LVGL labels
+        // Update Voltage label
         // ------------------------------------------
 
         if (objects.voltage != NULL)
@@ -96,6 +125,10 @@ void tasks_run(void)
             );
         }
 
+        // ------------------------------------------
+        // Update Current label
+        // ------------------------------------------
+
         if (objects.current != NULL)
         {
             lv_label_set_text(
@@ -104,9 +137,54 @@ void tasks_run(void)
             );
         }
 
+        // ==========================================
+        // STATUS
+        // ==========================================
+
+        bool voltage_ok =
+            (voltage >= VOLTAGE_MIN &&
+             voltage <= VOLTAGE_MAX);
+
+        bool current_ok =
+            (current >= CURRENT_MIN &&
+             current <= CURRENT_MAX);
+
+        bool system_ok =
+            voltage_ok && current_ok;
+
         // ------------------------------------------
-        // Serial debug
+        // LED
         // ------------------------------------------
+
+        if (objects.obj0 != NULL)
+        {
+            if (system_ok)
+            {
+                // GREEN = NORMAL
+
+                lv_led_set_color(
+                    objects.obj0,
+                    lv_color_hex(0x00FF00)
+                );
+
+                lv_led_on(objects.obj0);
+            }
+            else
+            {
+                // RED = ERROR
+
+                lv_led_set_color(
+                    objects.obj0,
+                    lv_color_hex(0xFF0000)
+                );
+
+                lv_led_on(objects.obj0);
+            }
+        }
+
+        // ==========================================
+        // DEBUG
+        // ==========================================
 
         Serial.print("Voltage = ");
         Serial.print(voltage, 2);
@@ -114,7 +192,14 @@ void tasks_run(void)
         Serial.print(" V | Current = ");
         Serial.print(current, 2);
 
-        Serial.println(" A");
+        if (system_ok)
+        {
+            Serial.println(" A | STATUS = NORMAL");
+        }
+        else
+        {
+            Serial.println(" A | STATUS = ERROR");
+        }
     }
 
     // ==============================================
