@@ -1,12 +1,13 @@
 #include <Arduino.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
-#include "tasks.h"
 
 #include "touchCalibration.h"
 #include "uart.h"
+#include "tasks.h"
 
-extern "C" {
+extern "C"
+{
     #include "ui/ui.h"
 }
 
@@ -45,7 +46,9 @@ uint16_t calData[5] = {
 
 static lv_disp_draw_buf_t draw_buf;
 
-static lv_color_t buf[SCREEN_WIDTH * 20];
+static lv_color_t buf[
+    SCREEN_WIDTH * 20
+];
 
 
 // ==================================================
@@ -55,12 +58,18 @@ static lv_color_t buf[SCREEN_WIDTH * 20];
 void my_disp_flush(
     lv_disp_drv_t *disp,
     const lv_area_t *area,
-    lv_color_t *color_p)
+    lv_color_t *color_p
+)
 {
-    uint32_t w = area->x2 - area->x1 + 1;
-    uint32_t h = area->y2 - area->y1 + 1;
+    uint32_t w =
+        area->x2 - area->x1 + 1;
+
+    uint32_t h =
+        area->y2 - area->y1 + 1;
+
 
     tft.startWrite();
+
 
     tft.setAddrWindow(
         area->x1,
@@ -69,15 +78,20 @@ void my_disp_flush(
         h
     );
 
+
     tft.pushColors(
         (uint16_t *)color_p,
         w * h,
         true
     );
 
+
     tft.endWrite();
 
-    lv_disp_flush_ready(disp);
+
+    lv_disp_flush_ready(
+        disp
+    );
 }
 
 
@@ -87,23 +101,34 @@ void my_disp_flush(
 
 void my_touchpad_read(
     lv_indev_drv_t *indev_drv,
-    lv_indev_data_t *data)
+    lv_indev_data_t *data
+)
 {
     uint16_t x;
+
     uint16_t y;
 
-    bool pressed = tft.getTouch(&x, &y);
+
+    bool pressed =
+        tft.getTouch(
+            &x,
+            &y
+        );
+
 
     if (pressed)
     {
         data->point.x = x;
+
         data->point.y = y;
 
-        data->state = LV_INDEV_STATE_PR;
+        data->state =
+            LV_INDEV_STATE_PR;
     }
     else
     {
-        data->state = LV_INDEV_STATE_REL;
+        data->state =
+            LV_INDEV_STATE_REL;
     }
 }
 
@@ -114,46 +139,61 @@ void my_touchpad_read(
 
 void setup()
 {
-    // ==================================================
-    // UART
-    // ==================================================
+    // ==============================================
+    // SERIAL
+    // ==============================================
 
     serial_init();
 
+
     Serial.println();
-    Serial.println("================================");
-    Serial.println("ESP8266 + LVGL + TFT + TOUCH");
-    Serial.println("================================");
+
+    Serial.println(
+        "================================"
+    );
+
+    Serial.println(
+        "ESP8266 + LVGL + TFT + TOUCH"
+    );
+
+    Serial.println(
+        "================================"
+    );
 
 
-    // ==================================================
+    // ==============================================
     // TFT
-    // ==================================================
+    // ==============================================
 
     tft.begin();
 
     tft.setRotation(1);
 
-    // اعمال Calibration اولیه
     tft.setTouch(calData);
 
     tft.fillScreen(TFT_BLACK);
 
-    Serial.println("TFT initialized");
+
+    Serial.println(
+        "TFT initialized"
+    );
 
 
-    // ==================================================
+    // ==============================================
     // LVGL
-    // ==================================================
+    // ==============================================
 
     lv_init();
 
-    Serial.println("LVGL initialized");
+
+    Serial.println(
+        "LVGL initialized"
+    );
 
 
-    // ==================================================
+    // ==============================================
     // DRAW BUFFER
-    // ==================================================
+    // ==============================================
 
     lv_disp_draw_buf_init(
         &draw_buf,
@@ -163,87 +203,151 @@ void setup()
     );
 
 
-    // ==================================================
+    // ==============================================
     // DISPLAY DRIVER
-    // ==================================================
+    // ==============================================
 
     static lv_disp_drv_t disp_drv;
 
-    lv_disp_drv_init(&disp_drv);
-
-    disp_drv.hor_res = SCREEN_WIDTH;
-    disp_drv.ver_res = SCREEN_HEIGHT;
-
-    disp_drv.flush_cb = my_disp_flush;
-
-    disp_drv.draw_buf = &draw_buf;
-
-    // مناسب برای ESP8266
-    disp_drv.full_refresh = 0;
-
-    lv_disp_drv_register(&disp_drv);
-
-    Serial.println("Display driver registered");
+    lv_disp_drv_init(
+        &disp_drv
+    );
 
 
-    // ==================================================
+    disp_drv.hor_res =
+        SCREEN_WIDTH;
+
+    disp_drv.ver_res =
+        SCREEN_HEIGHT;
+
+    disp_drv.flush_cb =
+        my_disp_flush;
+
+    disp_drv.draw_buf =
+        &draw_buf;
+
+    disp_drv.full_refresh =
+        0;
+
+
+    lv_disp_drv_register(
+        &disp_drv
+    );
+
+
+    Serial.println(
+        "Display driver registered"
+    );
+
+
+    // ==============================================
     // TOUCH DRIVER
-    // ==================================================
+    // ==============================================
 
     static lv_indev_drv_t indev_drv;
 
-    lv_indev_drv_init(&indev_drv);
-
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
-
-    indev_drv.read_cb = my_touchpad_read;
-
-    lv_indev_drv_register(&indev_drv);
-
-    Serial.println("Touch driver registered");
+    lv_indev_drv_init(
+        &indev_drv
+    );
 
 
-    // ==================================================
-    // EEZ STUDIO UI
-    // ==================================================
+    indev_drv.type =
+        LV_INDEV_TYPE_POINTER;
+
+    indev_drv.read_cb =
+        my_touchpad_read;
+
+
+    lv_indev_drv_register(
+        &indev_drv
+    );
+
+
+    Serial.println(
+        "Touch driver registered"
+    );
+
+
+    // ==============================================
+    // EEZ UI
+    // ==============================================
 
     ui_init();
 
-    Serial.println("EEZ Studio UI initialized");
+
+    // ==============================================
+    // TASKS
+    // ==============================================
 
     tasks_init();
 
-    // ==================================================
-    // CHECK MAIN PAGE LABEL
-    // ==================================================
 
-if (objects.voltage != NULL)
-{
-    Serial.println("Voltage label found");
-}
-else
-{
-    Serial.println("ERROR: Voltage label not found!");
-}
-
-if (objects.current != NULL)
-{
-    Serial.println("Current label found");
-}
-else
-{
-    Serial.println("ERROR: Current label not found!");
-}
+    Serial.println(
+        "EEZ Studio UI initialized"
+    );
 
 
-    // ==================================================
-    // SETUP COMPLETE
-    // ==================================================
+    // ==============================================
+    // CHECK LABELS
+    // ==============================================
 
-    Serial.println("--------------------------------");
-    Serial.println("Setup complete");
-    Serial.println("Send text from Serial Monitor...");
-    Serial.println("--------------------------------");
+    if (objects.voltage != NULL)
+    {
+        Serial.println(
+            "Voltage label found"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "ERROR: Voltage label not found!"
+        );
+    }
+
+
+    if (objects.current != NULL)
+    {
+        Serial.println(
+            "Current label found"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "ERROR: Current label not found!"
+        );
+    }
+
+
+    if (objects.obj0 != NULL)
+    {
+        Serial.println(
+            "Status LED found"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "ERROR: Status LED not found!"
+        );
+    }
+
+
+    Serial.println(
+        "--------------------------------"
+    );
+
+    Serial.println(
+        "Setup complete"
+    );
+
+    Serial.println(
+        "Send: 23.75,0.82"
+    );
+
+    Serial.println(
+        "--------------------------------"
+    );
 }
 
 

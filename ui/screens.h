@@ -7,7 +7,9 @@
 extern "C" {
 #endif
 
+// ==================================================
 // Screens
+// ==================================================
 
 enum ScreensEnum {
     _SCREEN_ID_FIRST = 1,
@@ -16,16 +18,31 @@ enum ScreensEnum {
     _SCREEN_ID_LAST = 2
 };
 
+
+// ==================================================
+// Objects
+// ==================================================
+
 typedef struct _objects_t {
+
     lv_obj_t *main;
     lv_obj_t *page_2;
+
     lv_obj_t *voltage;
     lv_obj_t *current;
+
     lv_obj_t *obj0;
     lv_obj_t *obj1;
+
 } objects_t;
 
+
 extern objects_t objects;
+
+
+// ==================================================
+// Screen functions
+// ==================================================
 
 void create_screen_main();
 void tick_screen_main();
@@ -38,8 +55,9 @@ void tick_screen(int screen_index);
 
 void create_screens();
 
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif /*EEZ_LVGL_UI_SCREENS_H*/
+#endif /* EEZ_LVGL_UI_SCREENS_H */
