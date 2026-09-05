@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <lvgl.h>
 #include <TFT_eSPI.h>
+#include "tasks.h"
 
 #include "touchCalibration.h"
 #include "uart.h"
@@ -210,19 +211,29 @@ void setup()
 
     Serial.println("EEZ Studio UI initialized");
 
+    tasks_init();
 
     // ==================================================
     // CHECK MAIN PAGE LABEL
     // ==================================================
 
-    if (objects.main_page_label != NULL)
-    {
-        Serial.println("Main Page label found");
-    }
-    else
-    {
-        Serial.println("ERROR: Main Page label not found!");
-    }
+if (objects.voltage != NULL)
+{
+    Serial.println("Voltage label found");
+}
+else
+{
+    Serial.println("ERROR: Voltage label not found!");
+}
+
+if (objects.current != NULL)
+{
+    Serial.println("Current label found");
+}
+else
+{
+    Serial.println("ERROR: Current label not found!");
+}
 
 
     // ==================================================
@@ -242,30 +253,7 @@ void setup()
 
 void loop()
 {
-    // ==================================================
-    // UART
-    // ==================================================
+    tasks_run();
 
-    uart_receive();
-
-
-    // ==================================================
-    // LVGL
-    // ==================================================
-
-    lv_timer_handler();
-
-
-    // ==================================================
-    // EEZ STUDIO
-    // ==================================================
-
-    ui_tick();
-
-
-    // ==================================================
-    // Small delay
-    // ==================================================
-
-    delay(5);
+    yield();
 }

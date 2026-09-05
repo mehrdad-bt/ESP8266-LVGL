@@ -30,9 +30,10 @@ void create_screen_main() {
     {
         lv_obj_t *parent_obj = obj;
         {
+            // Voltage
             lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.main_page_label = obj;
-            lv_obj_set_pos(obj, 122, 104);
+            objects.voltage = obj;
+            lv_obj_set_pos(obj, 123, 88);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "Main Page");
         }
@@ -78,6 +79,14 @@ void create_screen_main() {
                     lv_label_set_text_static(obj, "Calibrate");
                 }
             }
+        }
+        {
+            // Current
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.current = obj;
+            lv_obj_set_pos(obj, 144, 120);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text_static(obj, "Text");
         }
     }
     
@@ -139,7 +148,6 @@ void create_screen_page_2() {
                 }
             }
         }
-
     }
     
     tick_screen_page_2();
