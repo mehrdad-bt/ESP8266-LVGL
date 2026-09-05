@@ -31,7 +31,6 @@ void create_screen_main() {
         lv_obj_t *parent_obj = obj;
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.main_page_label = obj;
             lv_obj_set_pos(obj, 122, 104);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "Main Page");
@@ -115,6 +114,31 @@ void create_screen_page_2() {
             lv_obj_set_pos(obj, 102, 20);
             lv_obj_set_size(obj, 125, 122);
         }
+        {
+            lv_obj_t *obj = lv_led_create(parent_obj);
+            objects.obj0 = obj;
+            lv_obj_set_pos(obj, 262, 88);
+            lv_obj_set_size(obj, 32, 32);
+            lv_led_set_color(obj, lv_color_hex(0xff0000));
+            lv_led_set_brightness(obj, 255);
+        }
+        {
+            lv_obj_t *obj = lv_btn_create(parent_obj);
+            lv_obj_set_pos(obj, 247, 177);
+            lv_obj_set_size(obj, 62, 50);
+            lv_obj_add_event_cb(obj, action_led_change_color, LV_EVENT_PRESSED, (void *)0);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, 0, 0);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text_static(obj, "LED");
+                }
+            }
+        }
+
     }
     
     tick_screen_page_2();

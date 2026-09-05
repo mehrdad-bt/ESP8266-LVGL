@@ -19,6 +19,7 @@ enum ScreensEnum {
 typedef struct _objects_t {
     lv_obj_t *main;
     lv_obj_t *page_2;
+    lv_obj_t *obj0;
     lv_obj_t *main_page_label;
 } objects_t;
 

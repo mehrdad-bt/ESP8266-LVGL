@@ -11,6 +11,7 @@ extern "C" {
 extern void action_next_page(lv_event_t * e);
 extern void action_prev_page(lv_event_t * e);
 extern void action_calibrate(lv_event_t * e);
+extern void action_led_change_color(lv_event_t * e);
 
 #ifdef __cplusplus
 }
