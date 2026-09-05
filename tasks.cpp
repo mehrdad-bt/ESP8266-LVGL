@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <lvgl.h>
 #include <stdio.h>
@@ -8,6 +9,34 @@ extern "C"
 }
 
 #include "uart.h"
+
+
+// ==================================================
+// LED COLORS
+// ==================================================
+
+#define LED_BLUE    0x0000FF
+#define LED_GREEN   0x00FF00
+#define LED_RED     0xFF0000
+#define LED_ORANGE  0xFFA500
+
+
+// ==================================================
+// LED BLINK
+// ==================================================
+
+static lv_timer_t *led_blink_timer = NULL;
+
+static bool led_blink_state = false;
+
+static uint32_t led_blink_color = LED_RED;
+
+
+// ==================================================
+// FUNCTION DECLARATION
+// ==================================================
+
+static void led_blink_cb(lv_timer_t *timer);
 
 
 // ==================================================
@@ -65,38 +94,112 @@ static char current_text[32];
 
 
 // ==================================================
-// LED COLORS
+// SET STATUS LED
 // ==================================================
 
-#define LED_BLUE   0x0000FF
-#define LED_GREEN  0x00FF00
-#define LED_RED    0xFF0000
-#define LED_ORANGE 0xFFA500
-
-
-// ==================================================
-// SET LED COLOR
-// ==================================================
-
-static void set_status_led(
-    uint32_t color
-)
+static void set_status_led(uint32_t color)
 {
     if (objects.obj0 == NULL)
+        return;
+
+
+    // ==================================================
+    // BLUE / GREEN = SOLID
+    // ==================================================
+
+    if (
+        color == LED_BLUE ||
+        color == LED_GREEN
+    )
     {
+        if (led_blink_timer != NULL)
+        {
+            lv_timer_del(led_blink_timer);
+            led_blink_timer = NULL;
+        }
+
+        led_blink_state = false;
+
+        lv_led_set_color(
+            objects.obj0,
+            lv_color_hex(color)
+        );
+
+        lv_led_on(objects.obj0);
+
         return;
     }
 
 
-    lv_led_set_color(
-        objects.obj0,
-        lv_color_hex(color)
-    );
+    // ==================================================
+    // RED / ORANGE = BLINK
+    // ==================================================
+
+    if (
+        color == LED_RED ||
+        color == LED_ORANGE
+    )
+    {
+        if (
+            led_blink_timer != NULL &&
+            led_blink_color == color
+        )
+        {
+            return;
+        }
+
+        if (led_blink_timer != NULL)
+        {
+            lv_timer_del(led_blink_timer);
+            led_blink_timer = NULL;
+        }
+
+        led_blink_color = color;
+
+        led_blink_state = true;
+
+        lv_led_set_color(
+            objects.obj0,
+            lv_color_hex(led_blink_color)
+        );
+
+        lv_led_on(objects.obj0);
+
+        led_blink_timer = lv_timer_create(
+            led_blink_cb,
+            500,
+            NULL
+        );
+    }
+}
 
 
-    lv_led_on(
-        objects.obj0
-    );
+// ==================================================
+// LED BLINK CALLBACK
+// ==================================================
+
+static void led_blink_cb(lv_timer_t *timer)
+{
+    (void)timer;
+
+    if (objects.obj0 == NULL)
+        return;
+
+    led_blink_state = !led_blink_state;
+
+    if (led_blink_state)
+    {
+        lv_led_set_color(
+            objects.obj0,
+            lv_color_hex(led_blink_color)
+        );
+
+        lv_led_on(objects.obj0);
+    }
+    else
+    {
+        lv_led_off(objects.obj0);
+    }
 }
 
 
@@ -114,14 +217,7 @@ void tasks_init(void)
 
     uart_timeout = false;
 
-
-    // ==============================================
-    // Initial LED
-    // ==============================================
-
-    set_status_led(
-        LED_BLUE
-    );
+    set_status_led(LED_BLUE);
 }
 
 
@@ -134,16 +230,16 @@ void tasks_run(void)
     uint32_t now = millis();
 
 
-    // ==============================================
+    // ==================================================
     // UART RECEIVE
-    // ==============================================
+    // ==================================================
 
     uart_receive();
 
 
-    // ==============================================
+    // ==================================================
     // GET NEW VALUES
-    // ==============================================
+    // ==================================================
 
     if (
         uart_get_values(
@@ -152,25 +248,16 @@ void tasks_run(void)
         )
     )
     {
-        // ==========================================
-        // New data received
-        // ==========================================
-
         data_received = true;
 
         last_uart_data = now;
 
-
-        // ==========================================
-        // Clear timeout
-        // ==========================================
-
         uart_timeout = false;
 
 
-        // ==========================================
-        // Voltage text
-        // ==========================================
+        // ==================================================
+        // VOLTAGE TEXT
+        // ==================================================
 
         snprintf(
             voltage_text,
@@ -180,9 +267,9 @@ void tasks_run(void)
         );
 
 
-        // ==========================================
-        // Current text
-        // ==========================================
+        // ==================================================
+        // CURRENT TEXT
+        // ==================================================
 
         snprintf(
             current_text,
@@ -192,9 +279,9 @@ void tasks_run(void)
         );
 
 
-        // ==========================================
-        // Update Voltage Label
-        // ==========================================
+        // ==================================================
+        // UPDATE VOLTAGE LABEL
+        // ==================================================
 
         if (objects.voltage != NULL)
         {
@@ -205,9 +292,9 @@ void tasks_run(void)
         }
 
 
-        // ==========================================
-        // Update Current Label
-        // ==========================================
+        // ==================================================
+        // UPDATE CURRENT LABEL
+        // ==================================================
 
         if (objects.current != NULL)
         {
@@ -218,9 +305,9 @@ void tasks_run(void)
         }
 
 
-        // ==========================================
+        // ==================================================
         // CHECK VOLTAGE
-        // ==========================================
+        // ==================================================
 
         bool voltage_ok =
             (
@@ -229,9 +316,9 @@ void tasks_run(void)
             );
 
 
-        // ==========================================
+        // ==================================================
         // CHECK CURRENT
-        // ==========================================
+        // ==================================================
 
         bool current_ok =
             (
@@ -240,80 +327,48 @@ void tasks_run(void)
             );
 
 
-        // ==========================================
+        // ==================================================
         // SYSTEM STATUS
-        // ==========================================
+        // ==================================================
 
         bool system_ok =
             voltage_ok &&
             current_ok;
 
 
-        // ==========================================
-        // LED STATUS
-        // ==========================================
+        // ==================================================
+        // NORMAL
+        // ==================================================
 
         if (system_ok)
         {
-            // --------------------------------------
-            // GREEN = NORMAL
-            // --------------------------------------
+            set_status_led(LED_GREEN);
 
-            set_status_led(
-                LED_GREEN
-            );
+            Serial.print("Voltage = ");
+            Serial.print(voltage, 2);
 
-
-            Serial.print(
-                "Voltage = "
-            );
-
-            Serial.print(
-                voltage,
-                2
-            );
-
-            Serial.print(
-                " V | Current = "
-            );
-
-            Serial.print(
-                current,
-                2
-            );
+            Serial.print(" V | Current = ");
+            Serial.print(current, 2);
 
             Serial.println(
                 " A | STATUS = NORMAL"
             );
         }
+
+
+        // ==================================================
+        // ERROR
+        // ==================================================
+
         else
         {
-            // --------------------------------------
-            // RED = ERROR
-            // --------------------------------------
+            set_status_led(LED_RED);
 
-            set_status_led(
-                LED_RED
-            );
+            Serial.print("Voltage = ");
+            Serial.print(voltage, 2);
 
-
-            Serial.print(
-                "Voltage = "
-            );
-
-            Serial.print(
-                voltage,
-                2
-            );
-
-            Serial.print(
-                " V | Current = "
-            );
-
-            Serial.print(
-                current,
-                2
-            );
+            Serial.print(" V | Current = ");
+            Serial.print(current, 2);
 
             Serial.println(
                 " A | STATUS = ERROR"
@@ -322,9 +377,9 @@ void tasks_run(void)
     }
 
 
-    // ==============================================
+    // ==================================================
     // UART TIMEOUT
-    // ==============================================
+    // ==================================================
 
     if (
         data_received &&
@@ -338,15 +393,7 @@ void tasks_run(void)
         {
             uart_timeout = true;
 
-
-            // --------------------------------------
-            // ORANGE = COMMUNICATION LOST
-            // --------------------------------------
-
-            set_status_led(
-                LED_ORANGE
-            );
-
+            set_status_led(LED_ORANGE);
 
             Serial.println(
                 "STATUS = UART TIMEOUT"
@@ -355,9 +402,9 @@ void tasks_run(void)
     }
 
 
-    // ==============================================
+    // ==================================================
     // LVGL
-    // ==============================================
+    // ==================================================
 
     if (
         now - last_lvgl >= 5
@@ -365,10 +412,9 @@ void tasks_run(void)
     {
         last_lvgl = now;
 
-
         lv_timer_handler();
-
 
         ui_tick();
     }
 }
+
