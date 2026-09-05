@@ -138,7 +138,14 @@ void create_screen_page_2() {
                 }
             }
         }
-
+        {
+            lv_obj_t *obj = lv_led_create(parent_obj);
+            objects.obj1 = obj;
+            lv_obj_set_pos(obj, 19, 126);
+            lv_obj_set_size(obj, 32, 32);
+            lv_led_set_color(obj, lv_color_hex(0x0000ff));
+            lv_led_set_brightness(obj, 255);
+        }
     }
     
     tick_screen_page_2();
