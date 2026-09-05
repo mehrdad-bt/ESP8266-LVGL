@@ -2,6 +2,9 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 
+#include "touchCalibration.h"
+#include "uart.h"
+
 extern "C" {
     #include "ui/ui.h"
 }
@@ -42,17 +45,6 @@ uint16_t calData[5] = {
 static lv_disp_draw_buf_t draw_buf;
 
 static lv_color_t buf[SCREEN_WIDTH * 20];
-
-
-// ==================================================
-// UART BUFFER
-// ==================================================
-
-#define UART_BUFFER_SIZE 128
-
-static char uart_buffer[UART_BUFFER_SIZE];
-
-static uint16_t uart_index = 0;
 
 
 // ==================================================
@@ -116,85 +108,21 @@ void my_touchpad_read(
 
 
 // ==================================================
-// UART RECEIVE
-// ==================================================
-
-void uart_receive()
-{
-    while (Serial.available())
-    {
-        char c = Serial.read();
-
-
-        // ------------------------------------------
-        // ENTER
-        // ------------------------------------------
-
-        if (c == '\n' || c == '\r')
-        {
-            if (uart_index > 0)
-            {
-                uart_buffer[uart_index] = '\0';
-
-
-                // نمایش در Serial Monitor
-                Serial.print("Received: ");
-                Serial.println(uart_buffer);
-
-
-                // ----------------------------------
-                // نمایش روی LCD
-                // ----------------------------------
-
-                if (objects.main_page_label != NULL)
-                {
-                    lv_label_set_text(
-                        objects.main_page_label,
-                        uart_buffer
-                    );
-                }
-
-
-                // آماده دریافت پیام بعدی
-                uart_index = 0;
-            }
-        }
-
-
-        // ------------------------------------------
-        // NORMAL CHARACTER
-        // ------------------------------------------
-
-        else
-        {
-            if (uart_index < UART_BUFFER_SIZE - 1)
-            {
-                uart_buffer[uart_index++] = c;
-            }
-        }
-    }
-}
-
-
-// ==================================================
 // SETUP
 // ==================================================
 
 void setup()
 {
     // ==================================================
-    // SERIAL / UART
+    // UART
     // ==================================================
 
-    Serial.begin(115200);
+    serial_init();
 
     Serial.println();
     Serial.println("================================");
     Serial.println("ESP8266 + LVGL + TFT + TOUCH");
     Serial.println("================================");
-
-    Serial.println("UART initialized");
-    Serial.println("Baud rate: 115200");
 
 
     // ==================================================
@@ -205,7 +133,7 @@ void setup()
 
     tft.setRotation(1);
 
-    // Touch calibration
+    // اعمال Calibration اولیه
     tft.setTouch(calData);
 
     tft.fillScreen(TFT_BLACK);
@@ -249,7 +177,7 @@ void setup()
 
     disp_drv.draw_buf = &draw_buf;
 
-    // مهم برای ESP8266
+    // مناسب برای ESP8266
     disp_drv.full_refresh = 0;
 
     lv_disp_drv_register(&disp_drv);
@@ -284,7 +212,7 @@ void setup()
 
 
     // ==================================================
-    // CHECK LABEL
+    // CHECK MAIN PAGE LABEL
     // ==================================================
 
     if (objects.main_page_label != NULL)
@@ -314,26 +242,30 @@ void setup()
 
 void loop()
 {
-    // ----------------------------------------------
+    // ==================================================
     // UART
-    // ----------------------------------------------
+    // ==================================================
 
     uart_receive();
 
 
-    // ----------------------------------------------
+    // ==================================================
     // LVGL
-    // ----------------------------------------------
+    // ==================================================
 
     lv_timer_handler();
 
 
-    // ----------------------------------------------
-    // EEZ Studio
-    // ----------------------------------------------
+    // ==================================================
+    // EEZ STUDIO
+    // ==================================================
 
     ui_tick();
 
+
+    // ==================================================
+    // Small delay
+    // ==================================================
 
     delay(5);
 }
