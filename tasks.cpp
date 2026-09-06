@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <lvgl.h>
 #include <stdio.h>
@@ -91,6 +90,50 @@ static char current_text[32];
 // ==================================================
 
 #define UART_TIMEOUT 3000UL
+
+
+// ==================================================
+// ERROR BOX
+// ==================================================
+
+static void show_low_voltage_error(void)
+{
+    if (objects.error_box != NULL)
+    {
+        lv_obj_clear_flag(
+            objects.error_box,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+
+    if (objects.low_voltage_label != NULL)
+    {
+        lv_obj_clear_flag(
+            objects.low_voltage_label,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+}
+
+
+static void hide_low_voltage_error(void)
+{
+    if (objects.error_box != NULL)
+    {
+        lv_obj_add_flag(
+            objects.error_box,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+
+    if (objects.low_voltage_label != NULL)
+    {
+        lv_obj_add_flag(
+            objects.low_voltage_label,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+}
 
 
 // ==================================================
@@ -217,7 +260,19 @@ void tasks_init(void)
 
     uart_timeout = false;
 
+
+    // ==================================================
+    // INITIAL STATUS
+    // ==================================================
+
     set_status_led(LED_BLUE);
+
+
+    // ==================================================
+    // HIDE ERROR BOX AT STARTUP
+    // ==================================================
+
+    hide_low_voltage_error();
 }
 
 
@@ -328,6 +383,20 @@ void tasks_run(void)
 
 
         // ==================================================
+        // LOW VOLTAGE ERROR BOX
+        // ==================================================
+
+        if (voltage < VOLTAGE_MIN)
+        {
+            show_low_voltage_error();
+        }
+        else
+        {
+            hide_low_voltage_error();
+        }
+
+
+        // ==================================================
         // SYSTEM STATUS
         // ==================================================
 
@@ -395,6 +464,8 @@ void tasks_run(void)
 
             set_status_led(LED_ORANGE);
 
+            hide_low_voltage_error();
+
             Serial.println(
                 "STATUS = UART TIMEOUT"
             );
@@ -417,4 +488,3 @@ void tasks_run(void)
         ui_tick();
     }
 }
-
