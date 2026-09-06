@@ -270,7 +270,7 @@ void create_screen_main() {
             lv_obj_set_pos(
                 obj,
                 103,
-                126
+                121
             );
 
             lv_obj_set_size(

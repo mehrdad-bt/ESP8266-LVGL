@@ -205,6 +205,12 @@ static void show_connection_lost_error(void)
             objects.low_voltage_label,
             "CONNECTION LOST"
         );
+        
+        lv_obj_set_pos(
+        objects.low_voltage_label,
+        88,
+        126
+        );
 
         lv_obj_set_style_text_color(
             objects.low_voltage_label,
