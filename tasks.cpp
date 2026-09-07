@@ -5,9 +5,48 @@
 extern "C"
 {
     #include "ui/ui.h"
+    #include "ui/screens.h"
+    #include "ui/actions.h"
 }
 
 #include "uart.h"
+
+
+// ==================================================
+// PHYSICAL BUTTONS
+// ==================================================
+
+#define BTN_RIGHT   D1
+#define BTN_SELECT  D4
+
+// Buzzer module - Low Level Trigger
+#define BUZZER_PIN  D0
+
+#define BUTTON_DEBOUNCE 50UL
+
+
+// ==================================================
+// OPTIONS
+// ==================================================
+
+#define OPTION_CALIBRATE 0
+#define OPTION_NEXT_PAGE 1
+
+static uint8_t selected_option = OPTION_CALIBRATE;
+
+
+// ==================================================
+// BUTTON STATES
+// ==================================================
+
+static bool right_raw_state  = HIGH;
+static bool select_raw_state = HIGH;
+
+static bool right_stable_state  = HIGH;
+static bool select_stable_state = HIGH;
+
+static uint32_t right_last_change  = 0;
+static uint32_t select_last_change = 0;
 
 
 // ==================================================
@@ -25,17 +64,8 @@ extern "C"
 // ==================================================
 
 static lv_timer_t *led_blink_timer = NULL;
-
 static bool led_blink_state = false;
-
 static uint32_t led_blink_color = LED_RED;
-
-
-// ==================================================
-// FUNCTION DECLARATION
-// ==================================================
-
-static void led_blink_cb(lv_timer_t *timer);
 
 
 // ==================================================
@@ -50,27 +80,14 @@ static uint32_t last_lvgl = 0;
 // ==================================================
 
 static float voltage = 0.0f;
-
 static float current = 0.0f;
 
-
-// ==================================================
-// UART STATUS
-// ==================================================
-
 static bool data_received = false;
-
 static bool uart_timeout = false;
 
 static uint32_t last_uart_data = 0;
 
-
-// ==================================================
-// DISPLAY TEXT
-// ==================================================
-
 static char voltage_text[32];
-
 static char current_text[32];
 
 
@@ -84,151 +101,201 @@ static char current_text[32];
 #define CURRENT_MIN 0.0f
 #define CURRENT_MAX 1.0f
 
-
-// ==================================================
-// UART TIMEOUT
-// ==================================================
-
 #define UART_TIMEOUT 3000UL
 
 
 // ==================================================
-// ERROR BOX
+// FUNCTION DECLARATIONS
 // ==================================================
 
-// --------------------------------------------------
-// LOW VOLTAGE
-// --------------------------------------------------
+static void led_blink_cb(lv_timer_t *timer);
+
+static void buttons_init(void);
+static void buttons_run(void);
+
+static void update_button_selection(void);
+
+static void set_status_led(uint32_t color);
+
+static void show_low_voltage_error(void);
+static void show_connection_lost_error(void);
+static void hide_status_error(void);
+
+static void buzzer_on(void);
+static void buzzer_off(void);
+
+
+// ==================================================
+// BUZZER
+// LOW LEVEL TRIGGER
+// ==================================================
+
+static void buzzer_on(void)
+{
+    // Low-Level Trigger:
+    // LOW = ON
+    digitalWrite(BUZZER_PIN, LOW);
+}
+
+
+static void buzzer_off(void)
+{
+    // Low-Level Trigger:
+    // HIGH = OFF
+    digitalWrite(BUZZER_PIN, HIGH);
+}
+
+
+// ==================================================
+// STATUS ERROR: LOW VOLTAGE
+// ==================================================
 
 static void show_low_voltage_error(void)
 {
-    if (objects.error_box != NULL)
+    if (objects.error_box == NULL ||
+        objects.low_voltage_label == NULL)
     {
-        // Dark red background
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(0x8B0000),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_bg_opa(
-            objects.error_box,
-            LV_OPA_COVER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        // Red border
-        lv_obj_set_style_border_color(
-            objects.error_box,
-            lv_color_hex(0xFF4444),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_border_width(
-            objects.error_box,
-            2,
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        // Show box
-        lv_obj_clear_flag(
-            objects.error_box,
-            LV_OBJ_FLAG_HIDDEN
-        );
+        return;
     }
 
-    if (objects.low_voltage_label != NULL)
-    {
-        lv_label_set_text(
-            objects.low_voltage_label,
-            "LOW VOLTAGE !"
-        );
 
-        lv_obj_set_style_text_color(
-            objects.low_voltage_label,
-            lv_color_hex(0xFFFFFF),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+    // Error box
+    lv_obj_set_style_bg_color(
+        objects.error_box,
+        lv_color_hex(0x8B0000),
+        LV_PART_MAIN
+    );
 
-        lv_obj_clear_flag(
-            objects.low_voltage_label,
-            LV_OBJ_FLAG_HIDDEN
-        );
-    }
+    lv_obj_set_style_bg_opa(
+        objects.error_box,
+        LV_OPA_COVER,
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_color(
+        objects.error_box,
+        lv_color_hex(0xFF4444),
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_width(
+        objects.error_box,
+        2,
+        LV_PART_MAIN
+    );
+
+
+    // Error text
+    lv_label_set_text(
+        objects.low_voltage_label,
+        "LOW VOLTAGE !"
+    );
+
+    lv_obj_set_pos(
+        objects.low_voltage_label,
+        103,
+        121
+    );
+
+    lv_obj_set_style_text_color(
+        objects.low_voltage_label,
+        lv_color_hex(0xFFFFFF),
+        LV_PART_MAIN
+    );
+
+
+    // Show
+    lv_obj_clear_flag(
+        objects.error_box,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+    lv_obj_clear_flag(
+        objects.low_voltage_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+
+    lv_obj_invalidate(objects.error_box);
+    lv_obj_invalidate(objects.low_voltage_label);
 }
 
 
-// --------------------------------------------------
-// CONNECTION LOST
-// --------------------------------------------------
+// ==================================================
+// STATUS ERROR: CONNECTION LOST
+// ==================================================
 
 static void show_connection_lost_error(void)
 {
-    if (objects.error_box != NULL)
+    if (objects.error_box == NULL ||
+        objects.low_voltage_label == NULL)
     {
-        // Orange background
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(0xCC6600),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_bg_opa(
-            objects.error_box,
-            LV_OPA_COVER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        // Orange border
-        lv_obj_set_style_border_color(
-            objects.error_box,
-            lv_color_hex(0xFFAA00),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_border_width(
-            objects.error_box,
-            2,
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        // Show box
-        lv_obj_clear_flag(
-            objects.error_box,
-            LV_OBJ_FLAG_HIDDEN
-        );
+        return;
     }
 
-    if (objects.low_voltage_label != NULL)
-    {
-        lv_label_set_text(
-            objects.low_voltage_label,
-            "CONNECTION LOST"
-        );
-        
-        lv_obj_set_pos(
+
+    lv_obj_set_style_bg_color(
+        objects.error_box,
+        lv_color_hex(0xCC6600),
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_bg_opa(
+        objects.error_box,
+        LV_OPA_COVER,
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_color(
+        objects.error_box,
+        lv_color_hex(0xFFAA00),
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_width(
+        objects.error_box,
+        2,
+        LV_PART_MAIN
+    );
+
+
+    lv_label_set_text(
+        objects.low_voltage_label,
+        "CONNECTION LOST"
+    );
+
+    lv_obj_set_pos(
         objects.low_voltage_label,
         88,
         126
-        );
+    );
 
-        lv_obj_set_style_text_color(
-            objects.low_voltage_label,
-            lv_color_hex(0xFFFFFF),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+    lv_obj_set_style_text_color(
+        objects.low_voltage_label,
+        lv_color_hex(0xFFFFFF),
+        LV_PART_MAIN
+    );
 
-        lv_obj_clear_flag(
-            objects.low_voltage_label,
-            LV_OBJ_FLAG_HIDDEN
-        );
-    }
+
+    lv_obj_clear_flag(
+        objects.error_box,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+    lv_obj_clear_flag(
+        objects.low_voltage_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+
+    lv_obj_invalidate(objects.error_box);
+    lv_obj_invalidate(objects.low_voltage_label);
 }
 
 
-// --------------------------------------------------
-// HIDE ERROR BOX
-// --------------------------------------------------
+// ==================================================
+// HIDE STATUS ERROR
+// ==================================================
 
 static void hide_status_error(void)
 {
@@ -240,6 +307,7 @@ static void hide_status_error(void)
         );
     }
 
+
     if (objects.low_voltage_label != NULL)
     {
         lv_obj_add_flag(
@@ -251,84 +319,97 @@ static void hide_status_error(void)
 
 
 // ==================================================
-// SET STATUS LED
+// STATUS LED
 // ==================================================
 
 static void set_status_led(uint32_t color)
 {
     if (objects.obj0 == NULL)
+    {
         return;
+    }
 
 
-    // ==================================================
-    // BLUE / GREEN = SOLID
-    // ==================================================
+    // ------------------------------------------------
+    // BLUE / GREEN = CONSTANT
+    // ------------------------------------------------
 
-    if (
-        color == LED_BLUE ||
-        color == LED_GREEN
-    )
+    if (color == LED_BLUE ||
+        color == LED_GREEN)
     {
         if (led_blink_timer != NULL)
         {
-            lv_timer_del(led_blink_timer);
+            lv_timer_del(
+                led_blink_timer
+            );
+
             led_blink_timer = NULL;
         }
 
+
         led_blink_state = false;
+
 
         lv_led_set_color(
             objects.obj0,
             lv_color_hex(color)
         );
 
-        lv_led_on(objects.obj0);
+        lv_led_on(
+            objects.obj0
+        );
 
         return;
     }
 
 
-    // ==================================================
-    // RED / ORANGE = BLINK
-    // ==================================================
+    // ------------------------------------------------
+    // RED / ORANGE = BLINKING
+    // ------------------------------------------------
 
-    if (
-        color == LED_RED ||
-        color == LED_ORANGE
-    )
+    if (color == LED_RED ||
+        color == LED_ORANGE)
     {
         // Already blinking with same color
-        if (
-            led_blink_timer != NULL &&
-            led_blink_color == color
-        )
+        if (led_blink_timer != NULL &&
+            led_blink_color == color)
         {
             return;
         }
 
-        // Delete previous blink timer
+
+        // Delete old timer
         if (led_blink_timer != NULL)
         {
-            lv_timer_del(led_blink_timer);
+            lv_timer_del(
+                led_blink_timer
+            );
+
             led_blink_timer = NULL;
         }
 
-        led_blink_color = color;
 
+        led_blink_color = color;
         led_blink_state = true;
+
 
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(led_blink_color)
+            lv_color_hex(color)
         );
 
-        lv_led_on(objects.obj0);
-
-        led_blink_timer = lv_timer_create(
-            led_blink_cb,
-            500,
-            NULL
+        lv_led_on(
+            objects.obj0
         );
+
+
+        // LED status blink = 500 ms
+        led_blink_timer =
+            lv_timer_create(
+                led_blink_cb,
+                500,
+                NULL
+            );
     }
 }
 
@@ -341,10 +422,16 @@ static void led_blink_cb(lv_timer_t *timer)
 {
     (void)timer;
 
-    if (objects.obj0 == NULL)
-        return;
 
-    led_blink_state = !led_blink_state;
+    if (objects.obj0 == NULL)
+    {
+        return;
+    }
+
+
+    led_blink_state =
+        !led_blink_state;
+
 
     if (led_blink_state)
     {
@@ -353,83 +440,422 @@ static void led_blink_cb(lv_timer_t *timer)
             lv_color_hex(led_blink_color)
         );
 
-        lv_led_on(objects.obj0);
+        lv_led_on(
+            objects.obj0
+        );
     }
     else
     {
-        lv_led_off(objects.obj0);
+        lv_led_off(
+            objects.obj0
+        );
     }
 }
 
 
 // ==================================================
-// TASK INITIALIZATION
+// BUTTON SELECTION
+// ==================================================
+
+static void update_button_selection(void)
+{
+    if (objects.calibrate_button == NULL ||
+        objects.next_page_button == NULL)
+    {
+        Serial.println(
+            "ERROR: Button objects are NULL"
+        );
+
+        return;
+    }
+
+
+    // ------------------------------------------------
+    // REMOVE BORDER FROM BOTH BUTTONS
+    // ------------------------------------------------
+
+    lv_obj_set_style_border_width(
+        objects.calibrate_button,
+        0,
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_width(
+        objects.next_page_button,
+        0,
+        LV_PART_MAIN
+    );
+
+
+    // ------------------------------------------------
+    // SELECT CURRENT BUTTON
+    // ------------------------------------------------
+
+    lv_obj_t *selected_btn = NULL;
+
+
+    if (selected_option == OPTION_CALIBRATE)
+    {
+        selected_btn =
+            objects.calibrate_button;
+
+        Serial.println(
+            "LCD SELECTED: CALIBRATE"
+        );
+    }
+    else
+    {
+        selected_btn =
+            objects.next_page_button;
+
+        Serial.println(
+            "LCD SELECTED: NEXT PAGE"
+        );
+    }
+
+
+    // ------------------------------------------------
+    // GREEN BORDER
+    // ------------------------------------------------
+
+    lv_obj_set_style_border_color(
+        selected_btn,
+        lv_color_hex(0x00FF00),
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_width(
+        selected_btn,
+        4,
+        LV_PART_MAIN
+    );
+
+    lv_obj_set_style_border_opa(
+        selected_btn,
+        LV_OPA_COVER,
+        LV_PART_MAIN
+    );
+
+
+    // No blinking
+    lv_obj_invalidate(
+        selected_btn
+    );
+}
+
+
+// ==================================================
+// BUTTON INITIALIZATION
+// ==================================================
+
+static void buttons_init(void)
+{
+    pinMode(
+        BTN_RIGHT,
+        INPUT_PULLUP
+    );
+
+    pinMode(
+        BTN_SELECT,
+        INPUT_PULLUP
+    );
+
+
+    right_raw_state =
+        digitalRead(BTN_RIGHT);
+
+    select_raw_state =
+        digitalRead(BTN_SELECT);
+
+
+    right_stable_state =
+        right_raw_state;
+
+    select_stable_state =
+        select_raw_state;
+
+
+    right_last_change =
+        millis();
+
+    select_last_change =
+        millis();
+
+
+    // Start with CALIBRATE selected
+    selected_option =
+        OPTION_CALIBRATE;
+
+
+    update_button_selection();
+}
+
+
+// ==================================================
+// BUTTON PROCESSING
+// ==================================================
+
+static void buttons_run(void)
+{
+    uint32_t now =
+        millis();
+
+
+    // ------------------------------------------------
+    // READ BUTTONS
+    // ------------------------------------------------
+
+    bool right_read =
+        digitalRead(BTN_RIGHT);
+
+    bool select_read =
+        digitalRead(BTN_SELECT);
+
+
+    // =================================================
+    // RIGHT BUTTON DEBOUNCE
+    // =================================================
+
+    if (right_read != right_raw_state)
+    {
+        right_raw_state =
+            right_read;
+
+        right_last_change =
+            now;
+    }
+
+
+    if ((now - right_last_change) >=
+        BUTTON_DEBOUNCE)
+    {
+        if (right_stable_state !=
+            right_raw_state)
+        {
+            right_stable_state =
+                right_raw_state;
+
+
+            // Button pressed
+            if (right_stable_state == LOW)
+            {
+                Serial.println(
+                    "BUTTON: NEXT"
+                );
+
+
+                // Toggle selection
+                if (selected_option ==
+                    OPTION_CALIBRATE)
+                {
+                    selected_option =
+                        OPTION_NEXT_PAGE;
+                }
+                else
+                {
+                    selected_option =
+                        OPTION_CALIBRATE;
+                }
+
+
+                update_button_selection();
+            }
+        }
+    }
+
+
+    // =================================================
+    // SELECT BUTTON DEBOUNCE
+    // =================================================
+
+    if (select_read != select_raw_state)
+    {
+        select_raw_state =
+            select_read;
+
+        select_last_change =
+            now;
+    }
+
+
+    if ((now - select_last_change) >=
+        BUTTON_DEBOUNCE)
+    {
+        if (select_stable_state !=
+            select_raw_state)
+        {
+            select_stable_state =
+                select_raw_state;
+
+
+            // Button pressed
+            if (select_stable_state == LOW)
+            {
+                Serial.println(
+                    "BUTTON: SELECT"
+                );
+
+
+                if (selected_option ==
+                    OPTION_CALIBRATE)
+                {
+                    Serial.println(
+                        "ACTION: CALIBRATE"
+                    );
+
+                    action_calibrate(NULL);
+                }
+                else
+                {
+                    Serial.println(
+                        "ACTION: NEXT PAGE"
+                    );
+
+                    action_next_page(NULL);
+                }
+            }
+        }
+    }
+}
+
+
+// ==================================================
+// TASK INIT
 // ==================================================
 
 void tasks_init(void)
 {
-    last_lvgl = millis();
+    last_lvgl =
+        millis();
 
-    last_uart_data = millis();
+    last_uart_data =
+        millis();
 
-    data_received = false;
+    data_received =
+        false;
 
-    uart_timeout = false;
-
-
-    // ==================================================
-    // INITIAL STATUS
-    // ==================================================
-
-    set_status_led(LED_BLUE);
+    uart_timeout =
+        false;
 
 
-    // ==================================================
-    // HIDE ERROR BOX
-    // ==================================================
+    // =================================================
+    // BUZZER INIT
+    // =================================================
+
+    pinMode(
+        BUZZER_PIN,
+        OUTPUT
+    );
+
+
+    // Low-Level Trigger
+    // HIGH = Buzzer OFF
+    buzzer_off();
+
+
+    // =================================================
+    // PHYSICAL BUTTONS
+    // =================================================
+
+    buttons_init();
+
+
+    // =================================================
+    // STATUS LED
+    // =================================================
+
+    set_status_led(
+        LED_BLUE
+    );
+
+
+    // =================================================
+    // HIDE ERROR
+    // =================================================
 
     hide_status_error();
+
+
+    Serial.println();
+    Serial.println(
+        "=============================="
+    );
+
+    Serial.println(
+        "TASKS INITIALIZED"
+    );
+
+    Serial.println(
+        "RIGHT  = D1"
+    );
+
+    Serial.println(
+        "SELECT = D4"
+    );
+
+    Serial.println(
+        "BUZZER = D0"
+    );
+
+    Serial.println(
+        "LEFT   = REMOVED"
+    );
+
+    Serial.println(
+        "BUTTON BLINK = OFF"
+    );
+
+    Serial.println(
+        "=============================="
+    );
 }
 
 
 // ==================================================
-// TASK RUNNER
+// TASK RUN
 // ==================================================
 
 void tasks_run(void)
 {
-    uint32_t now = millis();
+    uint32_t now =
+        millis();
 
 
-    // ==================================================
+    // =================================================
+    // PHYSICAL BUTTONS
+    // =================================================
+
+    buttons_run();
+
+
+    // =================================================
     // UART RECEIVE
-    // ==================================================
+    // =================================================
 
     uart_receive();
 
 
-    // ==================================================
-    // GET NEW UART VALUES
-    // ==================================================
+    // =================================================
+    // GET UART VALUES
+    // =================================================
 
-    if (
-        uart_get_values(
+    if (uart_get_values(
             &voltage,
-            &current
-        )
-    )
+            &current))
     {
-        // We received valid data
-        data_received = true;
+        data_received =
+            true;
 
-        last_uart_data = now;
+        last_uart_data =
+            now;
 
-        uart_timeout = false;
+        uart_timeout =
+            false;
 
 
-        // ==================================================
-        // VOLTAGE TEXT
-        // ==================================================
+        // ------------------------------------------------
+        // FORMAT VALUES
+        // ------------------------------------------------
 
         snprintf(
             voltage_text,
@@ -437,11 +863,6 @@ void tasks_run(void)
             "%.2f V",
             voltage
         );
-
-
-        // ==================================================
-        // CURRENT TEXT
-        // ==================================================
 
         snprintf(
             current_text,
@@ -451,9 +872,9 @@ void tasks_run(void)
         );
 
 
-        // ==================================================
-        // UPDATE VOLTAGE LABEL
-        // ==================================================
+        // ------------------------------------------------
+        // UPDATE LCD
+        // ------------------------------------------------
 
         if (objects.voltage != NULL)
         {
@@ -464,10 +885,6 @@ void tasks_run(void)
         }
 
 
-        // ==================================================
-        // UPDATE CURRENT LABEL
-        // ==================================================
-
         if (objects.current != NULL)
         {
             lv_label_set_text(
@@ -477,9 +894,9 @@ void tasks_run(void)
         }
 
 
-        // ==================================================
+        // =================================================
         // CHECK VOLTAGE
-        // ==================================================
+        // =================================================
 
         bool voltage_ok =
             (
@@ -488,9 +905,9 @@ void tasks_run(void)
             );
 
 
-        // ==================================================
+        // =================================================
         // CHECK CURRENT
-        // ==================================================
+        // =================================================
 
         bool current_ok =
             (
@@ -499,122 +916,149 @@ void tasks_run(void)
             );
 
 
-        // ==================================================
-        // ERROR BOX
-        // ==================================================
+        // =================================================
+        // LOW VOLTAGE ERROR + BUZZER
+        // =================================================
 
         if (voltage < VOLTAGE_MIN)
         {
-            // Low voltage
+            // Show LOW VOLTAGE
             show_low_voltage_error();
+
+
+            // Low-Level Trigger:
+            // LOW = Buzzer ON
+            buzzer_on();
         }
         else
         {
-            // Voltage is not low
-            // Hide previous error box
+            // Hide error
             hide_status_error();
+
+
+            // Buzzer OFF
+            buzzer_off();
         }
 
 
-        // ==================================================
+        // =================================================
         // SYSTEM STATUS
-        // ==================================================
+        // =================================================
 
         bool system_ok =
             voltage_ok &&
             current_ok;
 
 
-        // ==================================================
-        // NORMAL
-        // ==================================================
-
         if (system_ok)
         {
-            set_status_led(LED_GREEN);
+            set_status_led(
+                LED_GREEN
+            );
 
-            Serial.print("Voltage = ");
-            Serial.print(voltage, 2);
 
-            Serial.print(" V | Current = ");
-            Serial.print(current, 2);
+            Serial.print(
+                "V = "
+            );
+
+            Serial.print(
+                voltage,
+                2
+            );
+
+            Serial.print(
+                " | I = "
+            );
+
+            Serial.print(
+                current,
+                2
+            );
 
             Serial.println(
-                " A | STATUS = NORMAL"
+                " | STATUS = NORMAL"
             );
         }
-
-
-        // ==================================================
-        // ERROR
-        // ==================================================
-
         else
         {
-            set_status_led(LED_RED);
+            set_status_led(
+                LED_RED
+            );
 
-            Serial.print("Voltage = ");
-            Serial.print(voltage, 2);
 
-            Serial.print(" V | Current = ");
-            Serial.print(current, 2);
+            Serial.print(
+                "V = "
+            );
+
+            Serial.print(
+                voltage,
+                2
+            );
+
+            Serial.print(
+                " | I = "
+            );
+
+            Serial.print(
+                current,
+                2
+            );
 
             Serial.println(
-                " A | STATUS = ERROR"
+                " | STATUS = ERROR"
             );
         }
     }
 
 
-    // ==================================================
+    // =================================================
     // UART TIMEOUT
-    // ==================================================
+    // =================================================
 
-    if (
-        data_received &&
-        !uart_timeout
-    )
+    if (data_received &&
+        (now - last_uart_data >=
+         UART_TIMEOUT))
     {
-        if (
-            now - last_uart_data >=
-            UART_TIMEOUT
-        )
+        if (!uart_timeout)
         {
-            uart_timeout = true;
+            uart_timeout =
+                true;
 
 
-            // ==================================================
-            // ORANGE BLINKING LED
-            // ==================================================
+            // Orange LED
+            set_status_led(
+                LED_ORANGE
+            );
 
-            set_status_led(LED_ORANGE);
 
-
-            // ==================================================
-            // ORANGE ERROR BOX
-            // ==================================================
-
+            // Show connection lost
             show_connection_lost_error();
 
 
+            // Buzzer OFF
+            // Only LOW VOLTAGE causes buzzer
+            buzzer_off();
+
+
             Serial.println(
-                "STATUS = UART TIMEOUT"
+                "UART TIMEOUT - CONNECTION LOST"
             );
         }
     }
 
 
-    // ==================================================
+    // =================================================
     // LVGL
-    // ==================================================
+    // =================================================
 
-    if (
-        now - last_lvgl >= 5
-    )
+    if ((now - last_lvgl) >= 5)
     {
-        last_lvgl = now;
+        last_lvgl =
+            now;
+
 
         lv_timer_handler();
+
 
         ui_tick();
     }
