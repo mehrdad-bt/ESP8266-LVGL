@@ -19,8 +19,24 @@ extern "C"
 #define BTN_RIGHT   D1
 #define BTN_SELECT  D4
 
-// Buzzer module - Low Level Trigger
-#define BUZZER_PIN  D0
+
+// ==================================================
+// BUZZER
+// ==================================================
+
+#define BUZZER_PIN D0
+
+// Frequency of buzzer tone
+#define BUZZER_FREQUENCY 2000
+
+// Buzzer ON/OFF timing
+#define BUZZER_ON_TIME  200
+#define BUZZER_OFF_TIME 700
+
+
+// ==================================================
+// BUTTON DEBOUNCE
+// ==================================================
 
 #define BUTTON_DEBOUNCE 50UL
 
@@ -32,7 +48,8 @@ extern "C"
 #define OPTION_CALIBRATE 0
 #define OPTION_NEXT_PAGE 1
 
-static uint8_t selected_option = OPTION_CALIBRATE;
+static uint8_t selected_option =
+    OPTION_CALIBRATE;
 
 
 // ==================================================
@@ -64,8 +81,11 @@ static uint32_t select_last_change = 0;
 // ==================================================
 
 static lv_timer_t *led_blink_timer = NULL;
+
 static bool led_blink_state = false;
-static uint32_t led_blink_color = LED_RED;
+
+static uint32_t led_blink_color =
+    LED_RED;
 
 
 // ==================================================
@@ -105,6 +125,15 @@ static char current_text[32];
 
 
 // ==================================================
+// BUZZER STATE
+// ==================================================
+
+static bool buzzer_state = false;
+
+static uint32_t buzzer_last_change = 0;
+
+
+// ==================================================
 // FUNCTION DECLARATIONS
 // ==================================================
 
@@ -121,28 +150,97 @@ static void show_low_voltage_error(void);
 static void show_connection_lost_error(void);
 static void hide_status_error(void);
 
-static void buzzer_on(void);
-static void buzzer_off(void);
+static void buzzer_start(void);
+static void buzzer_stop(void);
+static void buzzer_run(void);
 
 
 // ==================================================
-// BUZZER
-// LOW LEVEL TRIGGER
+// BUZZER START
 // ==================================================
 
-static void buzzer_on(void)
+static void buzzer_start(void)
 {
-    // Low-Level Trigger:
-    // LOW = ON
-    digitalWrite(BUZZER_PIN, LOW);
+    if (buzzer_state)
+    {
+        return;
+    }
+
+    buzzer_state = true;
+
+    tone(
+        BUZZER_PIN,
+        BUZZER_FREQUENCY
+    );
+
+    buzzer_last_change = millis();
 }
 
 
-static void buzzer_off(void)
+// ==================================================
+// BUZZER STOP
+// ==================================================
+
+static void buzzer_stop(void)
 {
-    // Low-Level Trigger:
-    // HIGH = OFF
-    digitalWrite(BUZZER_PIN, HIGH);
+    buzzer_state = false;
+
+    noTone(
+        BUZZER_PIN
+    );
+
+    buzzer_last_change = millis();
+}
+
+
+// ==================================================
+// BUZZER RUN
+// ==================================================
+
+static void buzzer_run(void)
+{
+    uint32_t now = millis();
+
+
+    // ------------------------------------------------
+    // BUZZER IS ON
+    // ------------------------------------------------
+
+    if (buzzer_state)
+    {
+        if ((now - buzzer_last_change) >=
+            BUZZER_ON_TIME)
+        {
+            buzzer_state = false;
+
+            noTone(
+                BUZZER_PIN
+            );
+
+            buzzer_last_change = now;
+        }
+    }
+
+
+    // ------------------------------------------------
+    // BUZZER IS OFF
+    // ------------------------------------------------
+
+    else
+    {
+        if ((now - buzzer_last_change) >=
+            BUZZER_OFF_TIME)
+        {
+            buzzer_state = true;
+
+            tone(
+                BUZZER_PIN,
+                BUZZER_FREQUENCY
+            );
+
+            buzzer_last_change = now;
+        }
+    }
 }
 
 
@@ -159,7 +257,10 @@ static void show_low_voltage_error(void)
     }
 
 
-    // Error box
+    // ------------------------------------------------
+    // ERROR BOX
+    // ------------------------------------------------
+
     lv_obj_set_style_bg_color(
         objects.error_box,
         lv_color_hex(0x8B0000),
@@ -185,7 +286,10 @@ static void show_low_voltage_error(void)
     );
 
 
-    // Error text
+    // ------------------------------------------------
+    // ERROR TEXT
+    // ------------------------------------------------
+
     lv_label_set_text(
         objects.low_voltage_label,
         "LOW VOLTAGE !"
@@ -204,7 +308,10 @@ static void show_low_voltage_error(void)
     );
 
 
-    // Show
+    // ------------------------------------------------
+    // SHOW
+    // ------------------------------------------------
+
     lv_obj_clear_flag(
         objects.error_box,
         LV_OBJ_FLAG_HIDDEN
@@ -216,8 +323,13 @@ static void show_low_voltage_error(void)
     );
 
 
-    lv_obj_invalidate(objects.error_box);
-    lv_obj_invalidate(objects.low_voltage_label);
+    lv_obj_invalidate(
+        objects.error_box
+    );
+
+    lv_obj_invalidate(
+        objects.low_voltage_label
+    );
 }
 
 
@@ -233,6 +345,10 @@ static void show_connection_lost_error(void)
         return;
     }
 
+
+    // ------------------------------------------------
+    // ERROR BOX
+    // ------------------------------------------------
 
     lv_obj_set_style_bg_color(
         objects.error_box,
@@ -259,6 +375,10 @@ static void show_connection_lost_error(void)
     );
 
 
+    // ------------------------------------------------
+    // ERROR TEXT
+    // ------------------------------------------------
+
     lv_label_set_text(
         objects.low_voltage_label,
         "CONNECTION LOST"
@@ -277,6 +397,10 @@ static void show_connection_lost_error(void)
     );
 
 
+    // ------------------------------------------------
+    // SHOW
+    // ------------------------------------------------
+
     lv_obj_clear_flag(
         objects.error_box,
         LV_OBJ_FLAG_HIDDEN
@@ -288,8 +412,13 @@ static void show_connection_lost_error(void)
     );
 
 
-    lv_obj_invalidate(objects.error_box);
-    lv_obj_invalidate(objects.low_voltage_label);
+    lv_obj_invalidate(
+        objects.error_box
+    );
+
+    lv_obj_invalidate(
+        objects.low_voltage_label
+    );
 }
 
 
@@ -390,6 +519,7 @@ static void set_status_led(uint32_t color)
 
 
         led_blink_color = color;
+
         led_blink_state = true;
 
 
@@ -403,7 +533,7 @@ static void set_status_led(uint32_t color)
         );
 
 
-        // LED status blink = 500 ms
+        // LED blink every 500 ms
         led_blink_timer =
             lv_timer_create(
                 led_blink_cb,
@@ -437,7 +567,9 @@ static void led_blink_cb(lv_timer_t *timer)
     {
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(led_blink_color)
+            lv_color_hex(
+                led_blink_color
+            )
         );
 
         lv_led_on(
@@ -494,7 +626,8 @@ static void update_button_selection(void)
     lv_obj_t *selected_btn = NULL;
 
 
-    if (selected_option == OPTION_CALIBRATE)
+    if (selected_option ==
+        OPTION_CALIBRATE)
     {
         selected_btn =
             objects.calibrate_button;
@@ -537,7 +670,6 @@ static void update_button_selection(void)
     );
 
 
-    // No blinking
     lv_obj_invalidate(
         selected_btn
     );
@@ -748,9 +880,8 @@ void tasks_init(void)
     );
 
 
-    // Low-Level Trigger
-    // HIGH = Buzzer OFF
-    buzzer_off();
+    // Start with buzzer OFF
+    buzzer_stop();
 
 
     // =================================================
@@ -797,6 +928,42 @@ void tasks_init(void)
         "BUZZER = D0"
     );
 
+    Serial.print(
+        "BUZZER FREQUENCY = "
+    );
+
+    Serial.print(
+        BUZZER_FREQUENCY
+    );
+
+    Serial.println(
+        " Hz"
+    );
+
+    Serial.print(
+        "BUZZER ON TIME = "
+    );
+
+    Serial.print(
+        BUZZER_ON_TIME
+    );
+
+    Serial.println(
+        " ms"
+    );
+
+    Serial.print(
+        "BUZZER OFF TIME = "
+    );
+
+    Serial.print(
+        BUZZER_OFF_TIME
+    );
+
+    Serial.println(
+        " ms"
+    );
+
     Serial.println(
         "LEFT   = REMOVED"
     );
@@ -819,6 +986,32 @@ void tasks_run(void)
 {
     uint32_t now =
         millis();
+
+
+    // =================================================
+    // BUZZER
+    // =================================================
+
+    /*
+     * This function only controls the ON/OFF
+     * rhythm of the buzzer.
+     *
+     * The actual sound frequency is generated
+     * by tone().
+     */
+    if (voltage < VOLTAGE_MIN &&
+        data_received &&
+        !uart_timeout)
+    {
+        buzzer_run();
+    }
+    else
+    {
+        if (buzzer_state)
+        {
+            buzzer_stop();
+        }
+    }
 
 
     // =================================================
@@ -917,27 +1110,18 @@ void tasks_run(void)
 
 
         // =================================================
-        // LOW VOLTAGE ERROR + BUZZER
+        // LOW VOLTAGE ERROR
         // =================================================
 
         if (voltage < VOLTAGE_MIN)
         {
-            // Show LOW VOLTAGE
             show_low_voltage_error();
-
-
-            // Low-Level Trigger:
-            // LOW = Buzzer ON
-            buzzer_on();
         }
         else
         {
-            // Hide error
             hide_status_error();
 
-
-            // Buzzer OFF
-            buzzer_off();
+            buzzer_stop();
         }
 
 
@@ -1035,9 +1219,8 @@ void tasks_run(void)
             show_connection_lost_error();
 
 
-            // Buzzer OFF
-            // Only LOW VOLTAGE causes buzzer
-            buzzer_off();
+            // Stop buzzer
+            buzzer_stop();
 
 
             Serial.println(
