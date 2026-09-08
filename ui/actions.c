@@ -1,91 +1,39 @@
-#include <Arduino.h>
-
 #include "actions.h"
 #include "screens.h"
-#include "touchCalibration.h"
+#include "../screen_manager.h"
 
 
-// ==================================================
-// TOUCH CALIBRATION
-// ==================================================
-
-void action_calibrate(lv_event_t *e)
+void action_go_to_settings_page(
+    lv_event_t *e
+)
 {
-    touch_calibration_start();
+    (void)e;
 
-    // برگشت به صفحه اصلی
-    loadScreen(SCREEN_ID_MAIN);
-
-    // درخواست redraw کامل صفحه
-    lv_obj_invalidate(lv_scr_act());
-
-    // اجرای فوری redraw
-    lv_refr_now(NULL);
+    screen_manager_show(
+        SCREEN_ID_SETTINGS
+    );
 }
 
 
-// ==================================================
-// NEXT PAGE
-// ==================================================
-
-void action_next_page(lv_event_t *e)
+void action_go_to_main_screen(
+    lv_event_t *e
+)
 {
-    loadScreen(SCREEN_ID_PAGE_2);
+    (void)e;
+
+    screen_manager_show(
+        SCREEN_ID_MAIN
+    );
 }
 
 
-// ==================================================
-// PREVIOUS PAGE
-// ==================================================
-
-void action_prev_page(lv_event_t *e)
+void action_go_to_buzzer_settings(
+    lv_event_t *e
+)
 {
-    loadScreen(SCREEN_ID_MAIN);
-}
+    (void)e;
 
-
-static void led_blink_timer(lv_timer_t *timer)
-{
-    static bool state = false;
-
-    state = !state;
-
-    if (state)
-    {
-        lv_led_on(objects.obj0);
-    }
-    else
-    {
-        lv_led_off(objects.obj0);
-    }
-}
-
-
-void action_led_change_color(lv_event_t *e)
-{
-    static bool blinking = false;
-    static lv_timer_t *blink_timer = NULL;
-
-    blinking = !blinking;
-
-    if (blinking)
-    {
-        lv_led_on(objects.obj0);
-
-        blink_timer = lv_timer_create(
-            led_blink_timer,
-            500,
-            NULL
-        );
-    }
-    else
-    {
-        if (blink_timer != NULL)
-        {
-            lv_timer_del(blink_timer);
-            blink_timer = NULL;
-        }
-
-        lv_led_on(objects.obj0);
-    }
+    screen_manager_show(
+        SCREEN_ID_BUZZER
+    );
 }
