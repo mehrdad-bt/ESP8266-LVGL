@@ -5,22 +5,27 @@
 #include <stdbool.h>
 
 #ifdef __cplusplus
-extern "C" {
+extern "C"
+{
 #endif
+
 
 void serial_init(void);
 
 void uart_receive(void);
+
 
 bool uart_get_message(
     char *buffer,
     uint16_t size
 );
 
+
 bool uart_get_values(
     float *voltage,
     float *current
 );
+
 
 #ifdef __cplusplus
 }

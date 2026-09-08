@@ -10,6 +10,8 @@ extern "C"
 }
 
 #include "uart.h"
+#include "tasks.h"
+#include "screen_manager.h"
 
 
 // ==================================================
@@ -21,17 +23,32 @@ extern "C"
 
 
 // ==================================================
-// BUZZER
+// BUZZER PIN
 // ==================================================
 
 #define BUZZER_PIN D0
 
-// Frequency of buzzer tone
+
+// ==================================================
+// BUZZER FREQUENCY
+// ==================================================
+
 #define BUZZER_FREQUENCY 2000
 
-// Buzzer ON/OFF timing
-#define BUZZER_ON_TIME  200
-#define BUZZER_OFF_TIME 700
+
+// ==================================================
+// BUZZER PATTERN TIMING
+// ==================================================
+
+#define BUZZER_MODE1_ON      200
+#define BUZZER_MODE1_OFF     700
+
+#define BUZZER_MODE2_BEEP    100
+#define BUZZER_MODE2_PAUSE   100
+#define BUZZER_MODE2_REPEAT  900
+
+#define BUZZER_MODE3_ON      500
+#define BUZZER_MODE3_OFF     500
 
 
 // ==================================================
@@ -42,28 +59,67 @@ extern "C"
 
 
 // ==================================================
-// OPTIONS
+// MAIN OPTIONS
 // ==================================================
 
-#define OPTION_CALIBRATE 0
-#define OPTION_NEXT_PAGE 1
+#define MAIN_OPTION_SETTINGS 0
+
+
+// ==================================================
+// SETTINGS OPTIONS
+// ==================================================
+
+#define SETTINGS_OPTION_BUZZER 0
+#define SETTINGS_OPTION_THEME  1
+#define SETTINGS_OPTION_BACK   2
+
+
+// ==================================================
+// BUZZER MODES
+// ==================================================
+
+#define BUZZER_MODE_1 0
+#define BUZZER_MODE_2 1
+#define BUZZER_MODE_3 2
+
+#define BUZZER_MODE_COUNT 3
+
+
+// ==================================================
+// BUTTON STATE
+// ==================================================
 
 static uint8_t selected_option =
-    OPTION_CALIBRATE;
+    MAIN_OPTION_SETTINGS;
+
+
+static bool right_raw_state =
+    HIGH;
+
+static bool select_raw_state =
+    HIGH;
+
+
+static bool right_stable_state =
+    HIGH;
+
+static bool select_stable_state =
+    HIGH;
+
+
+static uint32_t right_last_change =
+    0;
+
+static uint32_t select_last_change =
+    0;
 
 
 // ==================================================
-// BUTTON STATES
+// LAST SCREEN
 // ==================================================
 
-static bool right_raw_state  = HIGH;
-static bool select_raw_state = HIGH;
-
-static bool right_stable_state  = HIGH;
-static bool select_stable_state = HIGH;
-
-static uint32_t right_last_change  = 0;
-static uint32_t select_last_change = 0;
+static enum ScreensEnum button_last_screen =
+    SCREEN_ID_MAIN;
 
 
 // ==================================================
@@ -77,42 +133,7 @@ static uint32_t select_last_change = 0;
 
 
 // ==================================================
-// LED BLINK
-// ==================================================
-
-static lv_timer_t *led_blink_timer = NULL;
-
-static bool led_blink_state = false;
-
-static uint32_t led_blink_color =
-    LED_RED;
-
-
-// ==================================================
-// TASK TIMING
-// ==================================================
-
-static uint32_t last_lvgl = 0;
-
-
-// ==================================================
-// UART VALUES
-// ==================================================
-
-static float voltage = 0.0f;
-static float current = 0.0f;
-
-static bool data_received = false;
-static bool uart_timeout = false;
-
-static uint32_t last_uart_data = 0;
-
-static char voltage_text[32];
-static char current_text[32];
-
-
-// ==================================================
-// LIMITS
+// SYSTEM LIMITS
 // ==================================================
 
 #define VOLTAGE_MIN 20.0f
@@ -125,55 +146,230 @@ static char current_text[32];
 
 
 // ==================================================
+// SYSTEM STATE
+// ==================================================
+
+typedef struct
+{
+    float voltage;
+    float current;
+
+    bool data_received;
+
+    bool uart_timeout;
+    bool connection_lost;
+
+    bool voltage_ok;
+    bool current_ok;
+    bool system_ok;
+
+    bool low_voltage;
+
+} SystemState;
+
+
+static SystemState system_state =
+{
+    0.0f,
+    0.0f,
+
+    false,
+
+    false,
+    false,
+
+    false,
+    false,
+    false,
+
+    false
+};
+
+
+// ==================================================
+// TIMING
+// ==================================================
+
+static uint32_t last_uart_data =
+    0;
+
+static uint32_t last_lvgl =
+    0;
+
+
+// ==================================================
 // BUZZER STATE
 // ==================================================
 
-static bool buzzer_state = false;
+static bool buzzer_state =
+    false;
 
-static uint32_t buzzer_last_change = 0;
+static uint32_t buzzer_last_change =
+    0;
+
+
+// ==================================================
+// BUZZER MODE
+// ==================================================
+
+static uint8_t buzzer_mode =
+    BUZZER_MODE_1;
+
+
+// ==================================================
+// BUZZER PATTERN
+// ==================================================
+
+static uint8_t buzzer_step =
+    0;
+
+static uint32_t buzzer_step_start =
+    0;
+
+
+// ==================================================
+// GUI TEXT
+// ==================================================
+
+static char voltage_text[32];
+
+static char current_text[32];
+
+
+// ==================================================
+// LED BLINK
+// ==================================================
+
+static lv_timer_t *led_blink_timer =
+    NULL;
+
+static bool led_blink_state =
+    false;
+
+static uint32_t led_blink_color =
+    LED_RED;
 
 
 // ==================================================
 // FUNCTION DECLARATIONS
 // ==================================================
 
-static void led_blink_cb(lv_timer_t *timer);
-
 static void buttons_init(void);
 static void buttons_run(void);
+static void buttons_task(void);
+
+static void reset_selection_for_screen(
+    enum ScreensEnum screen
+);
 
 static void update_button_selection(void);
 
-static void set_status_led(uint32_t color);
+
+static void uart_task(void);
+static void safety_task(void);
+
+
+static void buzzer_stop(void);
+static void buzzer_run(void);
+static void buzzer_task(void);
+
+
+static void led_blink_cb(
+    lv_timer_t *timer
+);
+
+static void set_status_led(
+    uint32_t color
+);
+
+static void led_task(void);
+
 
 static void show_low_voltage_error(void);
 static void show_connection_lost_error(void);
 static void hide_status_error(void);
 
-static void buzzer_start(void);
-static void buzzer_stop(void);
-static void buzzer_run(void);
+static void gui_task(void);
+
+static void watchdog_task(void);
 
 
 // ==================================================
-// BUZZER START
+// BUZZER SET MODE
 // ==================================================
 
-static void buzzer_start(void)
+void buzzer_set_mode(
+    uint8_t mode
+)
 {
-    if (buzzer_state)
+    // ----------------------------------------------
+    // Validate mode
+    // ----------------------------------------------
+
+    if (
+        mode >=
+        BUZZER_MODE_COUNT
+    )
     {
-        return;
+        mode =
+            BUZZER_MODE_1;
     }
 
-    buzzer_state = true;
 
-    tone(
-        BUZZER_PIN,
-        BUZZER_FREQUENCY
+    // ----------------------------------------------
+    // Store mode
+    // ----------------------------------------------
+
+    buzzer_mode =
+        mode;
+
+
+    // ----------------------------------------------
+    // Reset pattern
+    // ----------------------------------------------
+
+    buzzer_step =
+        0;
+
+
+    buzzer_step_start =
+        millis();
+
+
+    // ----------------------------------------------
+    // Stop current sound
+    // ----------------------------------------------
+
+    buzzer_state =
+        false;
+
+
+    noTone(
+        BUZZER_PIN
     );
 
-    buzzer_last_change = millis();
+
+    // ----------------------------------------------
+    // Debug
+    // ----------------------------------------------
+
+    Serial.print(
+        "BUZZER MODE -> "
+    );
+
+    Serial.println(
+        buzzer_mode + 1
+    );
+}
+
+
+// ==================================================
+// BUZZER GET MODE
+// ==================================================
+
+uint8_t buzzer_get_mode(void)
+{
+    return buzzer_mode;
 }
 
 
@@ -183,13 +379,21 @@ static void buzzer_start(void)
 
 static void buzzer_stop(void)
 {
-    buzzer_state = false;
+    buzzer_state =
+        false;
+
 
     noTone(
         BUZZER_PIN
     );
 
-    buzzer_last_change = millis();
+
+    buzzer_step =
+        0;
+
+
+    buzzer_step_start =
+        millis();
 }
 
 
@@ -199,251 +403,350 @@ static void buzzer_stop(void)
 
 static void buzzer_run(void)
 {
-    uint32_t now = millis();
+    uint32_t now =
+        millis();
 
 
-    // ------------------------------------------------
-    // BUZZER IS ON
-    // ------------------------------------------------
+    // =================================================
+    // MODE 1
+    //
+    // 200 ms ON
+    // 700 ms OFF
+    // =================================================
 
-    if (buzzer_state)
+    if (
+        buzzer_mode ==
+        BUZZER_MODE_1
+    )
     {
-        if ((now - buzzer_last_change) >=
-            BUZZER_ON_TIME)
+        if (
+            buzzer_step ==
+            0
+        )
         {
-            buzzer_state = false;
+            if (
+                now - buzzer_step_start >=
+                BUZZER_MODE1_OFF
+            )
+            {
+                tone(
+                    BUZZER_PIN,
+                    BUZZER_FREQUENCY
+                );
 
-            noTone(
-                BUZZER_PIN
-            );
 
-            buzzer_last_change = now;
+                buzzer_state =
+                    true;
+
+
+                buzzer_step =
+                    1;
+
+
+                buzzer_step_start =
+                    now;
+            }
         }
-    }
-
-
-    // ------------------------------------------------
-    // BUZZER IS OFF
-    // ------------------------------------------------
-
-    else
-    {
-        if ((now - buzzer_last_change) >=
-            BUZZER_OFF_TIME)
+        else
         {
-            buzzer_state = true;
+            if (
+                now - buzzer_step_start >=
+                BUZZER_MODE1_ON
+            )
+            {
+                noTone(
+                    BUZZER_PIN
+                );
 
-            tone(
-                BUZZER_PIN,
-                BUZZER_FREQUENCY
-            );
 
-            buzzer_last_change = now;
+                buzzer_state =
+                    false;
+
+
+                buzzer_step =
+                    0;
+
+
+                buzzer_step_start =
+                    now;
+            }
         }
-    }
-}
 
 
-// ==================================================
-// STATUS ERROR: LOW VOLTAGE
-// ==================================================
-
-static void show_low_voltage_error(void)
-{
-    if (objects.error_box == NULL ||
-        objects.low_voltage_label == NULL)
-    {
         return;
     }
 
 
-    // ------------------------------------------------
-    // ERROR BOX
-    // ------------------------------------------------
+    // =================================================
+    // MODE 2
+    //
+    // BEEP
+    // PAUSE
+    // BEEP
+    // LONG PAUSE
+    // =================================================
 
-    lv_obj_set_style_bg_color(
-        objects.error_box,
-        lv_color_hex(0x8B0000),
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_bg_opa(
-        objects.error_box,
-        LV_OPA_COVER,
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_color(
-        objects.error_box,
-        lv_color_hex(0xFF4444),
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_width(
-        objects.error_box,
-        2,
-        LV_PART_MAIN
-    );
-
-
-    // ------------------------------------------------
-    // ERROR TEXT
-    // ------------------------------------------------
-
-    lv_label_set_text(
-        objects.low_voltage_label,
-        "LOW VOLTAGE !"
-    );
-
-    lv_obj_set_pos(
-        objects.low_voltage_label,
-        103,
-        121
-    );
-
-    lv_obj_set_style_text_color(
-        objects.low_voltage_label,
-        lv_color_hex(0xFFFFFF),
-        LV_PART_MAIN
-    );
-
-
-    // ------------------------------------------------
-    // SHOW
-    // ------------------------------------------------
-
-    lv_obj_clear_flag(
-        objects.error_box,
-        LV_OBJ_FLAG_HIDDEN
-    );
-
-    lv_obj_clear_flag(
-        objects.low_voltage_label,
-        LV_OBJ_FLAG_HIDDEN
-    );
-
-
-    lv_obj_invalidate(
-        objects.error_box
-    );
-
-    lv_obj_invalidate(
-        objects.low_voltage_label
-    );
-}
-
-
-// ==================================================
-// STATUS ERROR: CONNECTION LOST
-// ==================================================
-
-static void show_connection_lost_error(void)
-{
-    if (objects.error_box == NULL ||
-        objects.low_voltage_label == NULL)
+    if (
+        buzzer_mode ==
+        BUZZER_MODE_2
+    )
     {
+        switch (
+            buzzer_step
+        )
+        {
+            // -----------------------------------------
+            // Long pause
+            // -----------------------------------------
+
+            case 0:
+
+                if (
+                    now - buzzer_step_start >=
+                    BUZZER_MODE2_REPEAT
+                )
+                {
+                    tone(
+                        BUZZER_PIN,
+                        BUZZER_FREQUENCY
+                    );
+
+
+                    buzzer_state =
+                        true;
+
+
+                    buzzer_step =
+                        1;
+
+
+                    buzzer_step_start =
+                        now;
+                }
+
+                break;
+
+
+            // -----------------------------------------
+            // First beep
+            // -----------------------------------------
+
+            case 1:
+
+                if (
+                    now - buzzer_step_start >=
+                    BUZZER_MODE2_BEEP
+                )
+                {
+                    noTone(
+                        BUZZER_PIN
+                    );
+
+
+                    buzzer_state =
+                        false;
+
+
+                    buzzer_step =
+                        2;
+
+
+                    buzzer_step_start =
+                        now;
+                }
+
+                break;
+
+
+            // -----------------------------------------
+            // Pause
+            // -----------------------------------------
+
+            case 2:
+
+                if (
+                    now - buzzer_step_start >=
+                    BUZZER_MODE2_PAUSE
+                )
+                {
+                    tone(
+                        BUZZER_PIN,
+                        BUZZER_FREQUENCY
+                    );
+
+
+                    buzzer_state =
+                        true;
+
+
+                    buzzer_step =
+                        3;
+
+
+                    buzzer_step_start =
+                        now;
+                }
+
+                break;
+
+
+            // -----------------------------------------
+            // Second beep
+            // -----------------------------------------
+
+            case 3:
+
+                if (
+                    now - buzzer_step_start >=
+                    BUZZER_MODE2_BEEP
+                )
+                {
+                    noTone(
+                        BUZZER_PIN
+                    );
+
+
+                    buzzer_state =
+                        false;
+
+
+                    buzzer_step =
+                        0;
+
+
+                    buzzer_step_start =
+                        now;
+                }
+
+                break;
+        }
+
+
         return;
     }
 
 
-    // ------------------------------------------------
-    // ERROR BOX
-    // ------------------------------------------------
+    // =================================================
+    // MODE 3
+    //
+    // 500 ms ON
+    // 500 ms OFF
+    // =================================================
 
-    lv_obj_set_style_bg_color(
-        objects.error_box,
-        lv_color_hex(0xCC6600),
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_bg_opa(
-        objects.error_box,
-        LV_OPA_COVER,
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_color(
-        objects.error_box,
-        lv_color_hex(0xFFAA00),
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_width(
-        objects.error_box,
-        2,
-        LV_PART_MAIN
-    );
-
-
-    // ------------------------------------------------
-    // ERROR TEXT
-    // ------------------------------------------------
-
-    lv_label_set_text(
-        objects.low_voltage_label,
-        "CONNECTION LOST"
-    );
-
-    lv_obj_set_pos(
-        objects.low_voltage_label,
-        88,
-        126
-    );
-
-    lv_obj_set_style_text_color(
-        objects.low_voltage_label,
-        lv_color_hex(0xFFFFFF),
-        LV_PART_MAIN
-    );
+    if (
+        buzzer_mode ==
+        BUZZER_MODE_3
+    )
+    {
+        if (
+            buzzer_step ==
+            0
+        )
+        {
+            if (
+                now - buzzer_step_start >=
+                BUZZER_MODE3_OFF
+            )
+            {
+                tone(
+                    BUZZER_PIN,
+                    BUZZER_FREQUENCY
+                );
 
 
-    // ------------------------------------------------
-    // SHOW
-    // ------------------------------------------------
-
-    lv_obj_clear_flag(
-        objects.error_box,
-        LV_OBJ_FLAG_HIDDEN
-    );
-
-    lv_obj_clear_flag(
-        objects.low_voltage_label,
-        LV_OBJ_FLAG_HIDDEN
-    );
+                buzzer_state =
+                    true;
 
 
-    lv_obj_invalidate(
-        objects.error_box
-    );
+                buzzer_step =
+                    1;
 
-    lv_obj_invalidate(
-        objects.low_voltage_label
-    );
+
+                buzzer_step_start =
+                    now;
+            }
+        }
+        else
+        {
+            if (
+                now - buzzer_step_start >=
+                BUZZER_MODE3_ON
+            )
+            {
+                noTone(
+                    BUZZER_PIN
+                );
+
+
+                buzzer_state =
+                    false;
+
+
+                buzzer_step =
+                    0;
+
+
+                buzzer_step_start =
+                    now;
+            }
+        }
+    }
 }
 
 
 // ==================================================
-// HIDE STATUS ERROR
+// BUZZER TASK
 // ==================================================
 
-static void hide_status_error(void)
+static void buzzer_task(void)
 {
-    if (objects.error_box != NULL)
+    // ----------------------------------------------
+    // No UART data
+    // ----------------------------------------------
+
+    if (
+        !system_state.data_received
+    )
     {
-        lv_obj_add_flag(
-            objects.error_box,
-            LV_OBJ_FLAG_HIDDEN
-        );
+        buzzer_stop();
+
+        return;
     }
 
 
-    if (objects.low_voltage_label != NULL)
+    // ----------------------------------------------
+    // Connection lost
+    // ----------------------------------------------
+
+    if (
+        system_state.connection_lost
+    )
     {
-        lv_obj_add_flag(
-            objects.low_voltage_label,
-            LV_OBJ_FLAG_HIDDEN
-        );
+        buzzer_stop();
+
+        return;
     }
+
+
+    // ----------------------------------------------
+    // No low voltage
+    // ----------------------------------------------
+
+    if (
+        !system_state.low_voltage
+    )
+    {
+        buzzer_stop();
+
+        return;
+    }
+
+
+    // ----------------------------------------------
+    // Run selected pattern
+    // ----------------------------------------------
+
+    buzzer_run();
 }
 
 
@@ -451,89 +754,115 @@ static void hide_status_error(void)
 // STATUS LED
 // ==================================================
 
-static void set_status_led(uint32_t color)
+static void set_status_led(
+    uint32_t color
+)
 {
-    if (objects.obj0 == NULL)
+    if (
+        objects.obj0 == NULL
+    )
     {
         return;
     }
 
 
-    // ------------------------------------------------
-    // BLUE / GREEN = CONSTANT
-    // ------------------------------------------------
+    // =================================================
+    // CONSTANT
+    // =================================================
 
-    if (color == LED_BLUE ||
-        color == LED_GREEN)
+    if (
+        color == LED_BLUE ||
+        color == LED_GREEN
+    )
     {
-        if (led_blink_timer != NULL)
+        if (
+            led_blink_timer != NULL
+        )
         {
             lv_timer_del(
                 led_blink_timer
             );
 
-            led_blink_timer = NULL;
+
+            led_blink_timer =
+                NULL;
         }
 
 
-        led_blink_state = false;
+        led_blink_state =
+            false;
 
 
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(color)
+            lv_color_hex(
+                color
+            )
         );
+
 
         lv_led_on(
             objects.obj0
         );
 
+
         return;
     }
 
 
-    // ------------------------------------------------
-    // RED / ORANGE = BLINKING
-    // ------------------------------------------------
+    // =================================================
+    // BLINK
+    // =================================================
 
-    if (color == LED_RED ||
-        color == LED_ORANGE)
+    if (
+        color == LED_RED ||
+        color == LED_ORANGE
+    )
     {
-        // Already blinking with same color
-        if (led_blink_timer != NULL &&
-            led_blink_color == color)
+        if (
+            led_blink_timer != NULL &&
+            led_blink_color == color
+        )
         {
             return;
         }
 
 
-        // Delete old timer
-        if (led_blink_timer != NULL)
+        if (
+            led_blink_timer != NULL
+        )
         {
             lv_timer_del(
                 led_blink_timer
             );
 
-            led_blink_timer = NULL;
+
+            led_blink_timer =
+                NULL;
         }
 
 
-        led_blink_color = color;
+        led_blink_color =
+            color;
 
-        led_blink_state = true;
+
+        led_blink_state =
+            true;
 
 
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(color)
+            lv_color_hex(
+                color
+            )
         );
+
 
         lv_led_on(
             objects.obj0
         );
 
 
-        // LED blink every 500 ms
         led_blink_timer =
             lv_timer_create(
                 led_blink_cb,
@@ -548,12 +877,16 @@ static void set_status_led(uint32_t color)
 // LED BLINK CALLBACK
 // ==================================================
 
-static void led_blink_cb(lv_timer_t *timer)
+static void led_blink_cb(
+    lv_timer_t *timer
+)
 {
     (void)timer;
 
 
-    if (objects.obj0 == NULL)
+    if (
+        objects.obj0 == NULL
+    )
     {
         return;
     }
@@ -563,7 +896,9 @@ static void led_blink_cb(lv_timer_t *timer)
         !led_blink_state;
 
 
-    if (led_blink_state)
+    if (
+        led_blink_state
+    )
     {
         lv_led_set_color(
             objects.obj0,
@@ -571,6 +906,7 @@ static void led_blink_cb(lv_timer_t *timer)
                 led_blink_color
             )
         );
+
 
         lv_led_on(
             objects.obj0
@@ -586,98 +922,854 @@ static void led_blink_cb(lv_timer_t *timer)
 
 
 // ==================================================
-// BUTTON SELECTION
+// LED TASK
 // ==================================================
 
-static void update_button_selection(void)
+static void led_task(void)
 {
-    if (objects.calibrate_button == NULL ||
-        objects.next_page_button == NULL)
+    if (
+        !system_state.data_received
+    )
     {
-        Serial.println(
-            "ERROR: Button objects are NULL"
+        set_status_led(
+            LED_BLUE
         );
 
         return;
     }
 
 
-    // ------------------------------------------------
-    // REMOVE BORDER FROM BOTH BUTTONS
-    // ------------------------------------------------
-
-    lv_obj_set_style_border_width(
-        objects.calibrate_button,
-        0,
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_width(
-        objects.next_page_button,
-        0,
-        LV_PART_MAIN
-    );
-
-
-    // ------------------------------------------------
-    // SELECT CURRENT BUTTON
-    // ------------------------------------------------
-
-    lv_obj_t *selected_btn = NULL;
-
-
-    if (selected_option ==
-        OPTION_CALIBRATE)
+    if (
+        system_state.connection_lost
+    )
     {
-        selected_btn =
-            objects.calibrate_button;
-
-        Serial.println(
-            "LCD SELECTED: CALIBRATE"
+        set_status_led(
+            LED_ORANGE
         );
-    }
-    else
-    {
-        selected_btn =
-            objects.next_page_button;
 
-        Serial.println(
-            "LCD SELECTED: NEXT PAGE"
-        );
+        return;
     }
 
 
-    // ------------------------------------------------
-    // GREEN BORDER
-    // ------------------------------------------------
+    if (
+        system_state.system_ok
+    )
+    {
+        set_status_led(
+            LED_GREEN
+        );
 
-    lv_obj_set_style_border_color(
-        selected_btn,
-        lv_color_hex(0x00FF00),
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_width(
-        selected_btn,
-        4,
-        LV_PART_MAIN
-    );
-
-    lv_obj_set_style_border_opa(
-        selected_btn,
-        LV_OPA_COVER,
-        LV_PART_MAIN
-    );
+        return;
+    }
 
 
-    lv_obj_invalidate(
-        selected_btn
+    set_status_led(
+        LED_RED
     );
 }
 
 
 // ==================================================
-// BUTTON INITIALIZATION
+// UART TASK
+// ==================================================
+
+static void uart_task(void)
+{
+    uart_receive();
+
+
+    float new_voltage =
+        0.0f;
+
+
+    float new_current =
+        0.0f;
+
+
+    if (
+        uart_get_values(
+            &new_voltage,
+            &new_current
+        )
+    )
+    {
+        system_state.voltage =
+            new_voltage;
+
+
+        system_state.current =
+            new_current;
+
+
+        system_state.data_received =
+            true;
+
+
+        system_state.uart_timeout =
+            false;
+
+
+        system_state.connection_lost =
+            false;
+
+
+        last_uart_data =
+            millis();
+
+
+        Serial.print(
+            "TASK UART -> V = "
+        );
+
+
+        Serial.print(
+            system_state.voltage,
+            2
+        );
+
+
+        Serial.print(
+            " | I = "
+        );
+
+
+        Serial.println(
+            system_state.current,
+            2
+        );
+    }
+}
+
+
+// ==================================================
+// SAFETY TASK
+// ==================================================
+
+static void safety_task(void)
+{
+    if (
+        !system_state.data_received
+    )
+    {
+        system_state.voltage_ok =
+            false;
+
+
+        system_state.current_ok =
+            false;
+
+
+        system_state.system_ok =
+            false;
+
+
+        system_state.low_voltage =
+            false;
+
+
+        system_state.uart_timeout =
+            false;
+
+
+        system_state.connection_lost =
+            false;
+
+
+        return;
+    }
+
+
+    // =================================================
+    // CONNECTION TIMEOUT
+    // =================================================
+
+    system_state.connection_lost =
+        (
+            millis() -
+            last_uart_data >=
+            UART_TIMEOUT
+        );
+
+
+    system_state.uart_timeout =
+        system_state.connection_lost;
+
+
+    // =================================================
+    // VOLTAGE
+    // =================================================
+
+    system_state.voltage_ok =
+        (
+            system_state.voltage >=
+            VOLTAGE_MIN
+            &&
+            system_state.voltage <=
+            VOLTAGE_MAX
+        );
+
+
+    // =================================================
+    // CURRENT
+    // =================================================
+
+    system_state.current_ok =
+        (
+            system_state.current >=
+            CURRENT_MIN
+            &&
+            system_state.current <=
+            CURRENT_MAX
+        );
+
+
+    // =================================================
+    // LOW VOLTAGE
+    // =================================================
+
+    system_state.low_voltage =
+        (
+            system_state.voltage <
+            VOLTAGE_MIN
+        );
+
+
+    // =================================================
+    // SYSTEM OK
+    // =================================================
+
+    system_state.system_ok =
+        (
+            system_state.voltage_ok
+            &&
+            system_state.current_ok
+            &&
+            !system_state.connection_lost
+        );
+}
+
+
+// ==================================================
+// LOW VOLTAGE ERROR
+// ==================================================
+
+static void show_low_voltage_error(void)
+{
+    if (
+        objects.error_box == NULL ||
+        objects.low_voltage_label == NULL
+    )
+    {
+        return;
+    }
+
+
+    lv_obj_set_style_bg_color(
+        objects.error_box,
+        lv_color_hex(
+            0x8B0000
+        ),
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_set_style_bg_opa(
+        objects.error_box,
+        LV_OPA_COVER,
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_set_style_border_color(
+        objects.error_box,
+        lv_color_hex(
+            0xFF4444
+        ),
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_set_style_border_width(
+        objects.error_box,
+        2,
+        LV_PART_MAIN
+    );
+
+
+    lv_label_set_text(
+        objects.low_voltage_label,
+        "LOW VOLTAGE !"
+    );
+
+
+    lv_obj_set_pos(
+        objects.low_voltage_label,
+        103,
+        121
+    );
+
+
+    lv_obj_set_style_text_color(
+        objects.low_voltage_label,
+        lv_color_hex(
+            0xFFFFFF
+        ),
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_clear_flag(
+        objects.error_box,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+
+    lv_obj_clear_flag(
+        objects.low_voltage_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
+}
+
+
+// ==================================================
+// CONNECTION LOST ERROR
+// ==================================================
+
+static void show_connection_lost_error(void)
+{
+    if (
+        objects.error_box == NULL ||
+        objects.low_voltage_label == NULL
+    )
+    {
+        return;
+    }
+
+
+    lv_obj_set_style_bg_color(
+        objects.error_box,
+        lv_color_hex(
+            0xCC6600
+        ),
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_set_style_bg_opa(
+        objects.error_box,
+        LV_OPA_COVER,
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_set_style_border_color(
+        objects.error_box,
+        lv_color_hex(
+            0xFFAA00
+        ),
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_set_style_border_width(
+        objects.error_box,
+        2,
+        LV_PART_MAIN
+    );
+
+
+    lv_label_set_text(
+        objects.low_voltage_label,
+        "CONNECTION LOST"
+    );
+
+
+    lv_obj_set_pos(
+        objects.low_voltage_label,
+        88,
+        126
+    );
+
+
+    lv_obj_set_style_text_color(
+        objects.low_voltage_label,
+        lv_color_hex(
+            0xFFFFFF
+        ),
+        LV_PART_MAIN
+    );
+
+
+    lv_obj_clear_flag(
+        objects.error_box,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+
+    lv_obj_clear_flag(
+        objects.low_voltage_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
+}
+
+
+// ==================================================
+// HIDE ERROR
+// ==================================================
+
+static void hide_status_error(void)
+{
+    if (
+        objects.error_box != NULL
+    )
+    {
+        lv_obj_add_flag(
+            objects.error_box,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+
+
+    if (
+        objects.low_voltage_label != NULL
+    )
+    {
+        lv_obj_add_flag(
+            objects.low_voltage_label,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+}
+
+
+// ==================================================
+// GUI TASK
+// ==================================================
+
+static void gui_task(void)
+{
+    // =================================================
+    // VOLTAGE / CURRENT
+    // =================================================
+
+    if (
+        system_state.data_received
+    )
+    {
+        snprintf(
+            voltage_text,
+            sizeof(voltage_text),
+            "%.2f V",
+            system_state.voltage
+        );
+
+
+        snprintf(
+            current_text,
+            sizeof(current_text),
+            "%.2f A",
+            system_state.current
+        );
+
+
+        if (
+            objects.voltage != NULL
+        )
+        {
+            lv_label_set_text(
+                objects.voltage,
+                voltage_text
+            );
+        }
+
+
+        if (
+            objects.current != NULL
+        )
+        {
+            lv_label_set_text(
+                objects.current,
+                current_text
+            );
+        }
+    }
+
+
+    // =================================================
+    // ERROR
+    // =================================================
+
+    if (
+        system_state.connection_lost
+    )
+    {
+        show_connection_lost_error();
+    }
+    else if (
+        system_state.low_voltage
+    )
+    {
+        show_low_voltage_error();
+    }
+    else
+    {
+        hide_status_error();
+    }
+
+
+    // =================================================
+    // LVGL
+    // =================================================
+
+    uint32_t now =
+        millis();
+
+
+    if (
+        now - last_lvgl >=
+        5
+    )
+    {
+        last_lvgl =
+            now;
+
+
+        lv_timer_handler();
+
+
+        ui_tick();
+    }
+}
+
+
+// ==================================================
+// RESET SELECTION
+// ==================================================
+
+static void reset_selection_for_screen(
+    enum ScreensEnum screen
+)
+{
+    switch (
+        screen
+    )
+    {
+        case SCREEN_ID_MAIN:
+
+            selected_option =
+                MAIN_OPTION_SETTINGS;
+
+            break;
+
+
+        case SCREEN_ID_SETTINGS:
+
+            selected_option =
+                SETTINGS_OPTION_BUZZER;
+
+            break;
+
+
+        case SCREEN_ID_BUZZER:
+
+            selected_option =
+                0;
+
+
+            if (
+                objects.buzzer_options != NULL
+            )
+            {
+                lv_dropdown_set_selected(
+                    objects.buzzer_options,
+                    buzzer_mode
+                );
+            }
+
+            break;
+
+
+        default:
+
+            selected_option =
+                0;
+
+            break;
+    }
+}
+
+
+// ==================================================
+// UPDATE BUTTON SELECTION
+// ==================================================
+
+static void update_button_selection(void)
+{
+    enum ScreensEnum screen =
+        screen_manager_get();
+
+
+    // =================================================
+    // MAIN
+    // =================================================
+
+    if (
+        screen ==
+        SCREEN_ID_MAIN
+    )
+    {
+        if (
+            objects.settings_button == NULL
+        )
+        {
+            Serial.println(
+                "ERROR: SETTINGS BUTTON NULL"
+            );
+
+            return;
+        }
+
+
+        // ---------------------------------------------
+        // Remove old border
+        // ---------------------------------------------
+
+        lv_obj_set_style_border_width(
+            objects.settings_button,
+            0,
+            LV_PART_MAIN
+        );
+
+
+        // ---------------------------------------------
+        // Green border
+        // ---------------------------------------------
+
+        lv_obj_set_style_border_color(
+            objects.settings_button,
+            lv_color_hex(
+                0x00FF00
+            ),
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_set_style_border_width(
+            objects.settings_button,
+            4,
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_set_style_border_opa(
+            objects.settings_button,
+            LV_OPA_COVER,
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_invalidate(
+            objects.settings_button
+        );
+
+
+        Serial.println(
+            "LCD SELECTED: SETTINGS"
+        );
+
+
+        return;
+    }
+
+
+    // =================================================
+    // SETTINGS
+    // =================================================
+
+    if (
+        screen ==
+        SCREEN_ID_SETTINGS
+    )
+    {
+        if (
+            objects.buzzer_button == NULL ||
+            objects.theme_button == NULL ||
+            objects.back_button == NULL
+        )
+        {
+            Serial.println(
+                "ERROR: SETTINGS BUTTON OBJECT NULL"
+            );
+
+
+            return;
+        }
+
+
+        // ---------------------------------------------
+        // Remove all borders
+        // ---------------------------------------------
+
+        lv_obj_set_style_border_width(
+            objects.buzzer_button,
+            0,
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_set_style_border_width(
+            objects.theme_button,
+            0,
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_set_style_border_width(
+            objects.back_button,
+            0,
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_t *selected_btn =
+            NULL;
+
+
+        // ---------------------------------------------
+        // BUZZER
+        // ---------------------------------------------
+
+        if (
+            selected_option ==
+            SETTINGS_OPTION_BUZZER
+        )
+        {
+            selected_btn =
+                objects.buzzer_button;
+
+
+            Serial.println(
+                "LCD SELECTED: BUZZER"
+            );
+        }
+
+
+        // ---------------------------------------------
+        // THEME
+        // ---------------------------------------------
+
+        else if (
+            selected_option ==
+            SETTINGS_OPTION_THEME
+        )
+        {
+            selected_btn =
+                objects.theme_button;
+
+
+            Serial.println(
+                "LCD SELECTED: THEME"
+            );
+        }
+
+
+        // ---------------------------------------------
+        // BACK
+        // ---------------------------------------------
+
+        else if (
+            selected_option ==
+            SETTINGS_OPTION_BACK
+        )
+        {
+            selected_btn =
+                objects.back_button;
+
+
+            Serial.println(
+                "LCD SELECTED: BACK"
+            );
+        }
+
+
+        // ---------------------------------------------
+        // Green border
+        // ---------------------------------------------
+
+        if (
+            selected_btn != NULL
+        )
+        {
+            lv_obj_set_style_border_color(
+                selected_btn,
+                lv_color_hex(
+                    0x00FF00
+                ),
+                LV_PART_MAIN
+            );
+
+
+            lv_obj_set_style_border_width(
+                selected_btn,
+                4,
+                LV_PART_MAIN
+            );
+
+
+            lv_obj_set_style_border_opa(
+                selected_btn,
+                LV_OPA_COVER,
+                LV_PART_MAIN
+            );
+
+
+            lv_obj_invalidate(
+                selected_btn
+            );
+        }
+
+
+        return;
+    }
+
+
+    // =================================================
+    // BUZZER
+    // =================================================
+
+    if (
+        screen ==
+        SCREEN_ID_BUZZER
+    )
+    {
+        if (
+            objects.buzzer_options != NULL
+        )
+        {
+            uint16_t current =
+                lv_dropdown_get_selected(
+                    objects.buzzer_options
+                );
+
+
+            Serial.print(
+                "BUZZER OPTION: "
+            );
+
+
+            Serial.println(
+                current + 1
+            );
+        }
+
+
+        return;
+    }
+}
+
+
+// ==================================================
+// BUTTON INIT
 // ==================================================
 
 static void buttons_init(void)
@@ -687,6 +1779,7 @@ static void buttons_init(void)
         INPUT_PULLUP
     );
 
+
     pinMode(
         BTN_SELECT,
         INPUT_PULLUP
@@ -694,14 +1787,20 @@ static void buttons_init(void)
 
 
     right_raw_state =
-        digitalRead(BTN_RIGHT);
+        digitalRead(
+            BTN_RIGHT
+        );
+
 
     select_raw_state =
-        digitalRead(BTN_SELECT);
+        digitalRead(
+            BTN_SELECT
+        );
 
 
     right_stable_state =
         right_raw_state;
+
 
     select_stable_state =
         select_raw_state;
@@ -710,13 +1809,17 @@ static void buttons_init(void)
     right_last_change =
         millis();
 
+
     select_last_change =
         millis();
 
 
-    // Start with CALIBRATE selected
+    button_last_screen =
+        SCREEN_ID_MAIN;
+
+
     selected_option =
-        OPTION_CALIBRATE;
+        MAIN_OPTION_SETTINGS;
 
 
     update_button_selection();
@@ -724,7 +1827,7 @@ static void buttons_init(void)
 
 
 // ==================================================
-// BUTTON PROCESSING
+// BUTTON RUN
 // ==================================================
 
 static void buttons_run(void)
@@ -733,117 +1836,400 @@ static void buttons_run(void)
         millis();
 
 
-    // ------------------------------------------------
+    // =================================================
+    // CURRENT SCREEN
+    // =================================================
+
+    enum ScreensEnum current_screen =
+        screen_manager_get();
+
+
+    // =================================================
+    // SCREEN CHANGE
+    // =================================================
+
+    if (
+        current_screen !=
+        button_last_screen
+    )
+    {
+        Serial.print(
+            "BUTTON SCREEN CHANGE -> "
+        );
+
+
+        reset_selection_for_screen(
+            current_screen
+        );
+
+
+        button_last_screen =
+            current_screen;
+
+
+        switch (
+            current_screen
+        )
+        {
+            case SCREEN_ID_MAIN:
+
+                Serial.println(
+                    "MAIN"
+                );
+
+                break;
+
+
+            case SCREEN_ID_SETTINGS:
+
+                Serial.println(
+                    "SETTINGS"
+                );
+
+                break;
+
+
+            case SCREEN_ID_BUZZER:
+
+                Serial.println(
+                    "BUZZER"
+                );
+
+                break;
+
+
+            default:
+
+                Serial.println(
+                    "UNKNOWN"
+                );
+
+                break;
+        }
+    }
+
+
+    // =================================================
     // READ BUTTONS
-    // ------------------------------------------------
+    // =================================================
 
     bool right_read =
-        digitalRead(BTN_RIGHT);
+        digitalRead(
+            BTN_RIGHT
+        );
+
 
     bool select_read =
-        digitalRead(BTN_SELECT);
+        digitalRead(
+            BTN_SELECT
+        );
 
 
     // =================================================
-    // RIGHT BUTTON DEBOUNCE
+    // RIGHT RAW CHANGE
     // =================================================
 
-    if (right_read != right_raw_state)
+    if (
+        right_read !=
+        right_raw_state
+    )
     {
         right_raw_state =
             right_read;
+
 
         right_last_change =
             now;
     }
 
 
-    if ((now - right_last_change) >=
-        BUTTON_DEBOUNCE)
+    // =================================================
+    // RIGHT DEBOUNCE
+    // =================================================
+
+    if (
+        now - right_last_change >=
+        BUTTON_DEBOUNCE
+    )
     {
-        if (right_stable_state !=
-            right_raw_state)
+        if (
+            right_stable_state !=
+            right_raw_state
+        )
         {
             right_stable_state =
                 right_raw_state;
 
 
-            // Button pressed
-            if (right_stable_state == LOW)
+            if (
+                right_stable_state ==
+                LOW
+            )
             {
                 Serial.println(
-                    "BUTTON: NEXT"
+                    "BUTTON: RIGHT"
                 );
 
 
-                // Toggle selection
-                if (selected_option ==
-                    OPTION_CALIBRATE)
+                // =========================================
+                // MAIN
+                // =========================================
+
+                if (
+                    screen_manager_is(
+                        SCREEN_ID_MAIN
+                    )
+                )
                 {
                     selected_option =
-                        OPTION_NEXT_PAGE;
-                }
-                else
-                {
-                    selected_option =
-                        OPTION_CALIBRATE;
+                        MAIN_OPTION_SETTINGS;
+
+
+                    update_button_selection();
                 }
 
 
-                update_button_selection();
+                // =========================================
+                // SETTINGS
+                // =========================================
+
+                else if (
+                    screen_manager_is(
+                        SCREEN_ID_SETTINGS
+                    )
+                )
+                {
+                    selected_option++;
+
+
+                    if (
+                        selected_option >
+                        SETTINGS_OPTION_BACK
+                    )
+                    {
+                        selected_option =
+                            SETTINGS_OPTION_BUZZER;
+                    }
+
+
+                    update_button_selection();
+                }
+
+
+                // =========================================
+                // BUZZER
+                // =========================================
+
+                else if (
+                    screen_manager_is(
+                        SCREEN_ID_BUZZER
+                    )
+                )
+                {
+                    if (
+                        objects.buzzer_options != NULL
+                    )
+                    {
+                        uint16_t count =
+                            lv_dropdown_get_option_cnt(
+                                objects.buzzer_options
+                            );
+
+
+                        if (
+                            count > 0
+                        )
+                        {
+                            uint16_t current =
+                                lv_dropdown_get_selected(
+                                    objects.buzzer_options
+                                );
+
+
+                            current++;
+
+
+                            if (
+                                current >= count
+                            )
+                            {
+                                current =
+                                    0;
+                            }
+
+
+                            lv_dropdown_set_selected(
+                                objects.buzzer_options,
+                                current
+                            );
+
+
+                            buzzer_set_mode(
+                                current
+                            );
+                        }
+                    }
+                }
             }
         }
     }
 
 
     // =================================================
-    // SELECT BUTTON DEBOUNCE
+    // SELECT RAW CHANGE
     // =================================================
 
-    if (select_read != select_raw_state)
+    if (
+        select_read !=
+        select_raw_state
+    )
     {
         select_raw_state =
             select_read;
+
 
         select_last_change =
             now;
     }
 
 
-    if ((now - select_last_change) >=
-        BUTTON_DEBOUNCE)
+    // =================================================
+    // SELECT DEBOUNCE
+    // =================================================
+
+    if (
+        now - select_last_change >=
+        BUTTON_DEBOUNCE
+    )
     {
-        if (select_stable_state !=
-            select_raw_state)
+        if (
+            select_stable_state !=
+            select_raw_state
+        )
         {
             select_stable_state =
                 select_raw_state;
 
 
-            // Button pressed
-            if (select_stable_state == LOW)
+            if (
+                select_stable_state ==
+                LOW
+            )
             {
                 Serial.println(
                     "BUTTON: SELECT"
                 );
 
 
-                if (selected_option ==
-                    OPTION_CALIBRATE)
+                // =========================================
+                // MAIN
+                // =========================================
+
+                if (
+                    screen_manager_is(
+                        SCREEN_ID_MAIN
+                    )
+                )
                 {
                     Serial.println(
-                        "ACTION: CALIBRATE"
+                        "ACTION: SETTINGS"
                     );
 
-                    action_calibrate(NULL);
+
+                    action_go_to_settings_page(
+                        NULL
+                    );
                 }
-                else
+
+
+                // =========================================
+                // SETTINGS
+                // =========================================
+
+                else if (
+                    screen_manager_is(
+                        SCREEN_ID_SETTINGS
+                    )
+                )
+                {
+                    switch (
+                        selected_option
+                    )
+                    {
+                        // ---------------------------------
+                        // BUZZER
+                        // ---------------------------------
+
+                        case SETTINGS_OPTION_BUZZER:
+
+                            Serial.println(
+                                "ACTION: BUZZER"
+                            );
+
+
+                            action_go_to_buzzer_settings(
+                                NULL
+                            );
+
+                            break;
+
+
+                        // ---------------------------------
+                        // THEME
+                        // ---------------------------------
+
+                        case SETTINGS_OPTION_THEME:
+
+                            Serial.println(
+                                "ACTION: THEME"
+                            );
+
+                            break;
+
+
+                        // ---------------------------------
+                        // BACK
+                        // ---------------------------------
+
+                        case SETTINGS_OPTION_BACK:
+
+                            Serial.println(
+                                "ACTION: MAIN"
+                            );
+
+
+                            action_go_to_main_screen(
+                                NULL
+                            );
+
+                            break;
+
+
+                        default:
+
+                            break;
+                    }
+                }
+
+
+                // =========================================
+                // BUZZER
+                // =========================================
+
+                else if (
+                    screen_manager_is(
+                        SCREEN_ID_BUZZER
+                    )
+                )
                 {
                     Serial.println(
-                        "ACTION: NEXT PAGE"
+                        "ACTION: SETTINGS"
                     );
 
-                    action_next_page(NULL);
+
+                    action_go_to_settings_page(
+                        NULL
+                    );
                 }
             }
         }
@@ -852,26 +2238,45 @@ static void buttons_run(void)
 
 
 // ==================================================
-// TASK INIT
+// BUTTON TASK
+// ==================================================
+
+static void buttons_task(void)
+{
+    buttons_run();
+}
+
+
+// ==================================================
+// WATCHDOG
+// ==================================================
+
+static void watchdog_task(void)
+{
+    ESP.wdtFeed();
+}
+
+
+// ==================================================
+// TASK INITIALIZATION
 // ==================================================
 
 void tasks_init(void)
 {
-    last_lvgl =
-        millis();
+    // =================================================
+    // TIMING
+    // =================================================
 
     last_uart_data =
         millis();
 
-    data_received =
-        false;
 
-    uart_timeout =
-        false;
+    last_lvgl =
+        millis();
 
 
     // =================================================
-    // BUZZER INIT
+    // BUZZER
     // =================================================
 
     pinMode(
@@ -880,19 +2285,18 @@ void tasks_init(void)
     );
 
 
-    // Start with buzzer OFF
     buzzer_stop();
 
 
     // =================================================
-    // PHYSICAL BUTTONS
+    // BUTTONS
     // =================================================
 
     buttons_init();
 
 
     // =================================================
-    // STATUS LED
+    // LED
     // =================================================
 
     set_status_led(
@@ -901,19 +2305,24 @@ void tasks_init(void)
 
 
     // =================================================
-    // HIDE ERROR
+    // ERROR
     // =================================================
 
     hide_status_error();
 
 
+    // =================================================
+    // SERIAL
+    // =================================================
+
     Serial.println();
+
     Serial.println(
         "=============================="
     );
 
     Serial.println(
-        "TASKS INITIALIZED"
+        "TASK SYSTEM INITIALIZED"
     );
 
     Serial.println(
@@ -928,48 +2337,20 @@ void tasks_init(void)
         "BUZZER = D0"
     );
 
-    Serial.print(
-        "BUZZER FREQUENCY = "
-    );
-
-    Serial.print(
-        BUZZER_FREQUENCY
+    Serial.println(
+        "BUZZER MODE 1 = SINGLE BEEP"
     );
 
     Serial.println(
-        " Hz"
-    );
-
-    Serial.print(
-        "BUZZER ON TIME = "
-    );
-
-    Serial.print(
-        BUZZER_ON_TIME
+        "BUZZER MODE 2 = DOUBLE BEEP"
     );
 
     Serial.println(
-        " ms"
-    );
-
-    Serial.print(
-        "BUZZER OFF TIME = "
-    );
-
-    Serial.print(
-        BUZZER_OFF_TIME
+        "BUZZER MODE 3 = LONG BEEP"
     );
 
     Serial.println(
-        " ms"
-    );
-
-    Serial.println(
-        "LEFT   = REMOVED"
-    );
-
-    Serial.println(
-        "BUTTON BLINK = OFF"
+        "WATCHDOG = ENABLED"
     );
 
     Serial.println(
@@ -979,270 +2360,56 @@ void tasks_init(void)
 
 
 // ==================================================
-// TASK RUN
+// MAIN TASK RUNNER
 // ==================================================
 
 void tasks_run(void)
 {
-    uint32_t now =
-        millis();
+    // =================================================
+    // 1. BUTTON
+    // =================================================
+
+    buttons_task();
 
 
     // =================================================
-    // BUZZER
+    // 2. UART
     // =================================================
 
-    /*
-     * This function only controls the ON/OFF
-     * rhythm of the buzzer.
-     *
-     * The actual sound frequency is generated
-     * by tone().
-     */
-    if (voltage < VOLTAGE_MIN &&
-        data_received &&
-        !uart_timeout)
-    {
-        buzzer_run();
-    }
-    else
-    {
-        if (buzzer_state)
-        {
-            buzzer_stop();
-        }
-    }
+    uart_task();
 
 
     // =================================================
-    // PHYSICAL BUTTONS
+    // 3. SAFETY
     // =================================================
 
-    buttons_run();
-
-
-    // =================================================
-    // UART RECEIVE
-    // =================================================
-
-    uart_receive();
+    safety_task();
 
 
     // =================================================
-    // GET UART VALUES
+    // 4. BUZZER
     // =================================================
 
-    if (uart_get_values(
-            &voltage,
-            &current))
-    {
-        data_received =
-            true;
-
-        last_uart_data =
-            now;
-
-        uart_timeout =
-            false;
-
-
-        // ------------------------------------------------
-        // FORMAT VALUES
-        // ------------------------------------------------
-
-        snprintf(
-            voltage_text,
-            sizeof(voltage_text),
-            "%.2f V",
-            voltage
-        );
-
-        snprintf(
-            current_text,
-            sizeof(current_text),
-            "%.2f A",
-            current
-        );
-
-
-        // ------------------------------------------------
-        // UPDATE LCD
-        // ------------------------------------------------
-
-        if (objects.voltage != NULL)
-        {
-            lv_label_set_text(
-                objects.voltage,
-                voltage_text
-            );
-        }
-
-
-        if (objects.current != NULL)
-        {
-            lv_label_set_text(
-                objects.current,
-                current_text
-            );
-        }
-
-
-        // =================================================
-        // CHECK VOLTAGE
-        // =================================================
-
-        bool voltage_ok =
-            (
-                voltage >= VOLTAGE_MIN &&
-                voltage <= VOLTAGE_MAX
-            );
-
-
-        // =================================================
-        // CHECK CURRENT
-        // =================================================
-
-        bool current_ok =
-            (
-                current >= CURRENT_MIN &&
-                current <= CURRENT_MAX
-            );
-
-
-        // =================================================
-        // LOW VOLTAGE ERROR
-        // =================================================
-
-        if (voltage < VOLTAGE_MIN)
-        {
-            show_low_voltage_error();
-        }
-        else
-        {
-            hide_status_error();
-
-            buzzer_stop();
-        }
-
-
-        // =================================================
-        // SYSTEM STATUS
-        // =================================================
-
-        bool system_ok =
-            voltage_ok &&
-            current_ok;
-
-
-        if (system_ok)
-        {
-            set_status_led(
-                LED_GREEN
-            );
-
-
-            Serial.print(
-                "V = "
-            );
-
-            Serial.print(
-                voltage,
-                2
-            );
-
-            Serial.print(
-                " | I = "
-            );
-
-            Serial.print(
-                current,
-                2
-            );
-
-            Serial.println(
-                " | STATUS = NORMAL"
-            );
-        }
-        else
-        {
-            set_status_led(
-                LED_RED
-            );
-
-
-            Serial.print(
-                "V = "
-            );
-
-            Serial.print(
-                voltage,
-                2
-            );
-
-            Serial.print(
-                " | I = "
-            );
-
-            Serial.print(
-                current,
-                2
-            );
-
-            Serial.println(
-                " | STATUS = ERROR"
-            );
-        }
-    }
+    buzzer_task();
 
 
     // =================================================
-    // UART TIMEOUT
+    // 5. LED
     // =================================================
 
-    if (data_received &&
-        (now - last_uart_data >=
-         UART_TIMEOUT))
-    {
-        if (!uart_timeout)
-        {
-            uart_timeout =
-                true;
-
-
-            // Orange LED
-            set_status_led(
-                LED_ORANGE
-            );
-
-
-            // Show connection lost
-            show_connection_lost_error();
-
-
-            // Stop buzzer
-            buzzer_stop();
-
-
-            Serial.println(
-                "UART TIMEOUT - CONNECTION LOST"
-            );
-        }
-    }
+    led_task();
 
 
     // =================================================
-    // LVGL
+    // 6. GUI
     // =================================================
 
-    if ((now - last_lvgl) >= 5)
-    {
-        last_lvgl =
-            now;
+    gui_task();
 
 
-        lv_timer_handler();
+    // =================================================
+    // 7. WATCHDOG
+    // =================================================
 
-
-        ui_tick();
-    }
+    watchdog_task();
 }

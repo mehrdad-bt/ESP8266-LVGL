@@ -3,15 +3,13 @@
 
 #include <lvgl.h>
 
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-extern void action_next_page(lv_event_t * e);
-extern void action_prev_page(lv_event_t * e);
-extern void action_calibrate(lv_event_t * e);
-extern void action_led_change_color(lv_event_t * e);
+extern void action_go_to_settings_page(lv_event_t * e);
+extern void action_go_to_buzzer_settings(lv_event_t * e);
+extern void action_go_to_main_screen(lv_event_t * e);
 
 #ifdef __cplusplus
 }

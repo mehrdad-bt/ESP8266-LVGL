@@ -49,10 +49,21 @@ void serial_init(void)
 
     Serial.println();
 
-    Serial.println("================================");
-    Serial.println("UART initialized");
-    Serial.println("Baud rate: 115200");
-    Serial.println("================================");
+    Serial.println(
+        "================================"
+    );
+
+    Serial.println(
+        "UART initialized"
+    );
+
+    Serial.println(
+        "Baud rate: 115200"
+    );
+
+    Serial.println(
+        "================================"
+    );
 }
 
 
@@ -64,25 +75,33 @@ void uart_receive(void)
 {
     while (Serial.available())
     {
-        char c = Serial.read();
+        char c =
+            Serial.read();
 
 
         // ==========================================
-        // ENTER
+        // END OF MESSAGE
         // ==========================================
 
-        if (c == '\n' || c == '\r')
+        if (
+            c == '\n' ||
+            c == '\r'
+        )
         {
             if (uart_index > 0)
             {
-                uart_buffer[uart_index] = '\0';
+                uart_buffer[
+                    uart_index
+                ] = '\0';
 
 
                 // ==================================
                 // PRINT RECEIVED DATA
                 // ==================================
 
-                Serial.print("Received: ");
+                Serial.print(
+                    "Received: "
+                );
 
                 Serial.println(
                     uart_buffer
@@ -90,7 +109,7 @@ void uart_receive(void)
 
 
                 // ==================================
-                // PARSE
+                // PARSE DATA
                 //
                 // Format:
                 //
@@ -102,15 +121,17 @@ void uart_receive(void)
                 // ==================================
 
                 float voltage;
+
                 float current;
 
 
-                int result = sscanf(
-                    uart_buffer,
-                    "%f,%f",
-                    &voltage,
-                    &current
-                );
+                int result =
+                    sscanf(
+                        uart_buffer,
+                        "%f,%f",
+                        &voltage,
+                        &current
+                    );
 
 
                 // ==================================
@@ -119,11 +140,14 @@ void uart_receive(void)
 
                 if (result == 2)
                 {
-                    uart_voltage = voltage;
+                    uart_voltage =
+                        voltage;
 
-                    uart_current = current;
+                    uart_current =
+                        current;
 
-                    uart_values_ready = true;
+                    uart_values_ready =
+                        true;
 
 
                     Serial.print(
@@ -135,7 +159,9 @@ void uart_receive(void)
                         2
                     );
 
-                    Serial.println(" V");
+                    Serial.println(
+                        " V"
+                    );
 
 
                     Serial.print(
@@ -147,7 +173,9 @@ void uart_receive(void)
                         2
                     );
 
-                    Serial.println(" A");
+                    Serial.println(
+                        " A"
+                    );
                 }
 
 
@@ -183,11 +211,14 @@ void uart_receive(void)
                         UART_BUFFER_SIZE
                     );
 
+
                     uart_message[
                         UART_BUFFER_SIZE - 1
                     ] = '\0';
 
-                    uart_message_ready = true;
+
+                    uart_message_ready =
+                        true;
                 }
 
 
@@ -195,7 +226,8 @@ void uart_receive(void)
                 // RESET BUFFER
                 // ==================================
 
-                uart_index = 0;
+                uart_index =
+                    0;
             }
         }
 
@@ -250,9 +282,15 @@ bool uart_get_message(
         size
     );
 
-    buffer[size - 1] = '\0';
 
-    uart_message_ready = false;
+    buffer[
+        size - 1
+    ] = '\0';
+
+
+    uart_message_ready =
+        false;
+
 
     return true;
 }
@@ -282,11 +320,16 @@ bool uart_get_values(
     }
 
 
-    *voltage = uart_voltage;
+    *voltage =
+        uart_voltage;
 
-    *current = uart_current;
+    *current =
+        uart_current;
 
-    uart_values_ready = false;
+
+    uart_values_ready =
+        false;
+
 
     return true;
 }

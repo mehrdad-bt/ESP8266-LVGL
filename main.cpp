@@ -12,11 +12,13 @@ extern "C"
     #include "ui/screens.h"
 }
 
+
 // ==================================================
 // TFT
 // ==================================================
 
 TFT_eSPI tft = TFT_eSPI();
+
 
 // ==================================================
 // DISPLAY SIZE
@@ -24,6 +26,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 240
+
 
 // ==================================================
 // TOUCH CALIBRATION
@@ -38,6 +41,7 @@ uint16_t calData[5] =
     7
 };
 
+
 // ==================================================
 // LVGL DRAW BUFFER
 // ==================================================
@@ -47,6 +51,7 @@ static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[
     SCREEN_WIDTH * 10
 ];
+
 
 // ==================================================
 // DISPLAY FLUSH
@@ -63,6 +68,7 @@ void my_disp_flush(
 
     uint32_t h =
         area->y2 - area->y1 + 1;
+
 
     tft.startWrite();
 
@@ -81,8 +87,10 @@ void my_disp_flush(
 
     tft.endWrite();
 
+
     lv_disp_flush_ready(disp);
 }
+
 
 // ==================================================
 // TOUCH READ
@@ -93,14 +101,18 @@ void my_touchpad_read(
     lv_indev_data_t *data
 )
 {
+    (void)indev_drv;
+
     uint16_t x;
     uint16_t y;
+
 
     bool pressed =
         tft.getTouch(
             &x,
             &y
         );
+
 
     if (pressed)
     {
@@ -116,6 +128,7 @@ void my_touchpad_read(
             LV_INDEV_STATE_REL;
     }
 }
+
 
 // ==================================================
 // SETUP
@@ -143,6 +156,25 @@ void setup()
         "================================"
     );
 
+
+    // ==================================================
+    // WATCHDOG
+    // ==================================================
+
+    /*
+     * Enable ESP8266 software watchdog.
+     *
+     * If the application gets stuck and
+     * watchdog is not fed, ESP8266 resets.
+     */
+
+    ESP.wdtEnable(WDTO_4S);
+
+    Serial.println(
+        "Watchdog enabled: 4 seconds"
+    );
+
+
     // ==================================================
     // TFT
     // ==================================================
@@ -159,6 +191,7 @@ void setup()
         "TFT initialized"
     );
 
+
     // ==================================================
     // LVGL
     // ==================================================
@@ -168,6 +201,7 @@ void setup()
     Serial.println(
         "LVGL initialized"
     );
+
 
     // ==================================================
     // DRAW BUFFER
@@ -180,6 +214,7 @@ void setup()
         SCREEN_WIDTH * 10
     );
 
+
     // ==================================================
     // DISPLAY DRIVER
     // ==================================================
@@ -189,6 +224,7 @@ void setup()
     lv_disp_drv_init(
         &disp_drv
     );
+
 
     disp_drv.hor_res =
         SCREEN_WIDTH;
@@ -205,13 +241,16 @@ void setup()
     disp_drv.full_refresh =
         0;
 
+
     lv_disp_drv_register(
         &disp_drv
     );
 
+
     Serial.println(
         "Display driver registered"
     );
+
 
     // ==================================================
     // TOUCH DRIVER
@@ -223,19 +262,23 @@ void setup()
         &indev_drv
     );
 
+
     indev_drv.type =
         LV_INDEV_TYPE_POINTER;
 
     indev_drv.read_cb =
         my_touchpad_read;
 
+
     lv_indev_drv_register(
         &indev_drv
     );
 
+
     Serial.println(
         "Touch driver registered"
     );
+
 
     // ==================================================
     // EEZ STUDIO UI
@@ -247,11 +290,13 @@ void setup()
         "EEZ Studio UI initialized"
     );
 
+
     // ==================================================
-    // TASKS
+    // APPLICATION TASKS
     // ==================================================
 
     tasks_init();
+
 
     // ==================================================
     // CHECK UI OBJECTS
@@ -270,6 +315,7 @@ void setup()
         );
     }
 
+
     if (objects.current != NULL)
     {
         Serial.println(
@@ -283,7 +329,7 @@ void setup()
         );
     }
 
-    // obj1 = Status LED
+
     if (objects.obj0 != NULL)
     {
         Serial.println(
@@ -296,6 +342,7 @@ void setup()
             "ERROR: Status LED not found!"
         );
     }
+
 
     if (objects.error_box != NULL)
     {
@@ -310,6 +357,7 @@ void setup()
         );
     }
 
+
     if (objects.low_voltage_label != NULL)
     {
         Serial.println(
@@ -322,6 +370,7 @@ void setup()
             "ERROR: Low voltage label not found!"
         );
     }
+
 
     Serial.println(
         "--------------------------------"
@@ -339,6 +388,7 @@ void setup()
         "--------------------------------"
     );
 
+
     // ==================================================
     // FIRST LVGL REFRESH
     // ==================================================
@@ -346,27 +396,24 @@ void setup()
     lv_timer_handler();
 }
 
+
 // ==================================================
 // LOOP
 // ==================================================
 
 void loop()
 {
-    // ==================================================
-    // APPLICATION TASKS
-    // ==================================================
+    /*
+     * All application logic is executed
+     * through the task manager.
+     */
 
     tasks_run();
 
-    // ==================================================
-    // LVGL
-    // ==================================================
 
-    lv_timer_handler();
-
-    // ==================================================
-    // ESP8266 BACKGROUND
-    // ==================================================
+    /*
+     * Give ESP8266 background services CPU time.
+     */
 
     yield();
 
