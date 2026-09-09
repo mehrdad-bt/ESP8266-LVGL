@@ -23,16 +23,10 @@ extern "C"
 
 
 // ==================================================
-// BUZZER PIN
+// BUZZER
 // ==================================================
 
-#define BUZZER_PIN D0
-
-
-// ==================================================
-// BUZZER FREQUENCY
-// ==================================================
-
+#define BUZZER_PIN       D0
 #define BUZZER_FREQUENCY 2000
 
 
@@ -69,9 +63,10 @@ extern "C"
 // SETTINGS OPTIONS
 // ==================================================
 
-#define SETTINGS_OPTION_BUZZER 0
-#define SETTINGS_OPTION_THEME  1
-#define SETTINGS_OPTION_BACK   2
+#define SETTINGS_OPTION_BUZZER       0
+#define SETTINGS_OPTION_CALIBRATION  1
+#define SETTINGS_OPTION_VC_RANGE     2
+#define SETTINGS_OPTION_BACK         3
 
 
 // ==================================================
@@ -204,21 +199,8 @@ static uint32_t last_lvgl =
 static bool buzzer_state =
     false;
 
-static uint32_t buzzer_last_change =
-    0;
-
-
-// ==================================================
-// BUZZER MODE
-// ==================================================
-
 static uint8_t buzzer_mode =
     BUZZER_MODE_1;
-
-
-// ==================================================
-// BUZZER PATTERN
-// ==================================================
 
 static uint8_t buzzer_step =
     0;
@@ -255,7 +237,9 @@ static uint32_t led_blink_color =
 // ==================================================
 
 static void buttons_init(void);
+
 static void buttons_run(void);
+
 static void buttons_task(void);
 
 static void reset_selection_for_screen(
@@ -266,11 +250,14 @@ static void update_button_selection(void);
 
 
 static void uart_task(void);
+
 static void safety_task(void);
 
 
 static void buzzer_stop(void);
+
 static void buzzer_run(void);
+
 static void buzzer_task(void);
 
 
@@ -286,8 +273,11 @@ static void led_task(void);
 
 
 static void show_low_voltage_error(void);
+
 static void show_connection_lost_error(void);
+
 static void hide_status_error(void);
+
 
 static void gui_task(void);
 
@@ -317,7 +307,7 @@ void buzzer_set_mode(
 
 
     // ----------------------------------------------
-    // Store mode
+    // Save mode
     // ----------------------------------------------
 
     buzzer_mode =
@@ -325,19 +315,18 @@ void buzzer_set_mode(
 
 
     // ----------------------------------------------
-    // Reset pattern
+    // Reset buzzer pattern
     // ----------------------------------------------
 
     buzzer_step =
         0;
-
 
     buzzer_step_start =
         millis();
 
 
     // ----------------------------------------------
-    // Stop current sound
+    // Stop current tone
     // ----------------------------------------------
 
     buzzer_state =
@@ -559,7 +548,7 @@ static void buzzer_run(void)
 
 
             // -----------------------------------------
-            // Pause
+            // Pause between beeps
             // -----------------------------------------
 
             case 2:
@@ -617,6 +606,24 @@ static void buzzer_run(void)
                     buzzer_step_start =
                         now;
                 }
+
+                break;
+
+
+            default:
+
+                buzzer_step =
+                    0;
+
+                buzzer_step_start =
+                    now;
+
+                noTone(
+                    BUZZER_PIN
+                );
+
+                buzzer_state =
+                    false;
 
                 break;
         }
@@ -701,7 +708,7 @@ static void buzzer_run(void)
 static void buzzer_task(void)
 {
     // ----------------------------------------------
-    // No UART data
+    // No data received
     // ----------------------------------------------
 
     if (
@@ -743,7 +750,7 @@ static void buzzer_task(void)
 
 
     // ----------------------------------------------
-    // Run selected pattern
+    // Run selected mode
     // ----------------------------------------------
 
     buzzer_run();
@@ -767,7 +774,7 @@ static void set_status_led(
 
 
     // =================================================
-    // CONSTANT
+    // CONSTANT COLOR
     // =================================================
 
     if (
@@ -783,7 +790,6 @@ static void set_status_led(
                 led_blink_timer
             );
 
-
             led_blink_timer =
                 NULL;
         }
@@ -795,9 +801,7 @@ static void set_status_led(
 
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(
-                color
-            )
+            lv_color_hex(color)
         );
 
 
@@ -811,7 +815,7 @@ static void set_status_led(
 
 
     // =================================================
-    // BLINK
+    // BLINK COLOR
     // =================================================
 
     if (
@@ -836,7 +840,6 @@ static void set_status_led(
                 led_blink_timer
             );
 
-
             led_blink_timer =
                 NULL;
         }
@@ -852,9 +855,7 @@ static void set_status_led(
 
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(
-                color
-            )
+            lv_color_hex(color)
         );
 
 
@@ -1443,7 +1444,7 @@ static void gui_task(void)
 
 
 // ==================================================
-// RESET SELECTION
+// RESET SELECTION FOR SCREEN
 // ==================================================
 
 static void reset_selection_for_screen(
@@ -1454,6 +1455,10 @@ static void reset_selection_for_screen(
         screen
     )
     {
+        // ---------------------------------------------
+        // MAIN
+        // ---------------------------------------------
+
         case SCREEN_ID_MAIN:
 
             selected_option =
@@ -1462,6 +1467,10 @@ static void reset_selection_for_screen(
             break;
 
 
+        // ---------------------------------------------
+        // SETTINGS
+        // ---------------------------------------------
+
         case SCREEN_ID_SETTINGS:
 
             selected_option =
@@ -1469,6 +1478,10 @@ static void reset_selection_for_screen(
 
             break;
 
+
+        // ---------------------------------------------
+        // BUZZER
+        // ---------------------------------------------
 
         case SCREEN_ID_BUZZER:
 
@@ -1482,12 +1495,21 @@ static void reset_selection_for_screen(
             {
                 lv_dropdown_set_selected(
                     objects.buzzer_options,
-                    buzzer_mode
+                    buzzer_get_mode()
+                );
+
+
+                lv_obj_invalidate(
+                    objects.buzzer_options
                 );
             }
 
             break;
 
+
+        // ---------------------------------------------
+        // DEFAULT
+        // ---------------------------------------------
 
         default:
 
@@ -1519,7 +1541,7 @@ static void update_button_selection(void)
     )
     {
         if (
-            objects.settings_button == NULL
+            objects.btn_settings == NULL
         )
         {
             Serial.println(
@@ -1531,22 +1553,22 @@ static void update_button_selection(void)
 
 
         // ---------------------------------------------
-        // Remove old border
+        // Reset
         // ---------------------------------------------
 
         lv_obj_set_style_border_width(
-            objects.settings_button,
+            objects.btn_settings,
             0,
             LV_PART_MAIN
         );
 
 
         // ---------------------------------------------
-        // Green border
+        // Selected
         // ---------------------------------------------
 
         lv_obj_set_style_border_color(
-            objects.settings_button,
+            objects.btn_settings,
             lv_color_hex(
                 0x00FF00
             ),
@@ -1555,21 +1577,21 @@ static void update_button_selection(void)
 
 
         lv_obj_set_style_border_width(
-            objects.settings_button,
+            objects.btn_settings,
             4,
             LV_PART_MAIN
         );
 
 
         lv_obj_set_style_border_opa(
-            objects.settings_button,
+            objects.btn_settings,
             LV_OPA_COVER,
             LV_PART_MAIN
         );
 
 
         lv_obj_invalidate(
-            objects.settings_button
+            objects.btn_settings
         );
 
 
@@ -1592,15 +1614,15 @@ static void update_button_selection(void)
     )
     {
         if (
-            objects.buzzer_button == NULL ||
-            objects.theme_button == NULL ||
-            objects.back_button == NULL
+            objects.buzzer == NULL ||
+            objects.touch_calibration == NULL ||
+            objects.voltage_range == NULL ||
+            objects.exit_settings == NULL
         )
         {
             Serial.println(
                 "ERROR: SETTINGS BUTTON OBJECT NULL"
             );
-
 
             return;
         }
@@ -1611,21 +1633,28 @@ static void update_button_selection(void)
         // ---------------------------------------------
 
         lv_obj_set_style_border_width(
-            objects.buzzer_button,
+            objects.buzzer,
             0,
             LV_PART_MAIN
         );
 
 
         lv_obj_set_style_border_width(
-            objects.theme_button,
+            objects.touch_calibration,
             0,
             LV_PART_MAIN
         );
 
 
         lv_obj_set_style_border_width(
-            objects.back_button,
+            objects.voltage_range,
+            0,
+            LV_PART_MAIN
+        );
+
+
+        lv_obj_set_style_border_width(
+            objects.exit_settings,
             0,
             LV_PART_MAIN
         );
@@ -1645,7 +1674,7 @@ static void update_button_selection(void)
         )
         {
             selected_btn =
-                objects.buzzer_button;
+                objects.buzzer;
 
 
             Serial.println(
@@ -1655,26 +1684,45 @@ static void update_button_selection(void)
 
 
         // ---------------------------------------------
-        // THEME
+        // CALIBRATION
         // ---------------------------------------------
 
         else if (
             selected_option ==
-            SETTINGS_OPTION_THEME
+            SETTINGS_OPTION_CALIBRATION
         )
         {
             selected_btn =
-                objects.theme_button;
+                objects.touch_calibration;
 
 
             Serial.println(
-                "LCD SELECTED: THEME"
+                "LCD SELECTED: CALIBRATION"
             );
         }
 
 
         // ---------------------------------------------
-        // BACK
+        // V/C RANGE
+        // ---------------------------------------------
+
+        else if (
+            selected_option ==
+            SETTINGS_OPTION_VC_RANGE
+        )
+        {
+            selected_btn =
+                objects.voltage_range;
+
+
+            Serial.println(
+                "LCD SELECTED: V/C RANGE"
+            );
+        }
+
+
+        // ---------------------------------------------
+        // EXIT
         // ---------------------------------------------
 
         else if (
@@ -1683,11 +1731,11 @@ static void update_button_selection(void)
         )
         {
             selected_btn =
-                objects.back_button;
+                objects.exit_settings;
 
 
             Serial.println(
-                "LCD SELECTED: BACK"
+                "LCD SELECTED: EXIT"
             );
         }
 
@@ -1734,7 +1782,7 @@ static void update_button_selection(void)
 
 
     // =================================================
-    // BUZZER
+    // BUZZER SCREEN
     // =================================================
 
     if (
@@ -1746,19 +1794,13 @@ static void update_button_selection(void)
             objects.buzzer_options != NULL
         )
         {
-            uint16_t current =
-                lv_dropdown_get_selected(
-                    objects.buzzer_options
-                );
-
-
             Serial.print(
                 "BUZZER OPTION: "
             );
 
 
             Serial.println(
-                current + 1
+                buzzer_get_mode() + 1
             );
         }
 
@@ -1769,7 +1811,7 @@ static void update_button_selection(void)
 
 
 // ==================================================
-// BUTTON INIT
+// BUTTON INITIALIZATION
 // ==================================================
 
 static void buttons_init(void)
@@ -1906,6 +1948,9 @@ static void buttons_run(void)
 
                 break;
         }
+
+
+        update_button_selection();
     }
 
 
@@ -2046,6 +2091,10 @@ static void buttons_run(void)
                                 );
 
 
+                            // ---------------------------------
+                            // Next option
+                            // ---------------------------------
+
                             current++;
 
 
@@ -2058,14 +2107,41 @@ static void buttons_run(void)
                             }
 
 
+                            // ---------------------------------
+                            // Update buzzer mode
+                            // ---------------------------------
+
+                            buzzer_set_mode(
+                                (uint8_t)current
+                            );
+
+
+                            // ---------------------------------
+                            // Update dropdown
+                            // ---------------------------------
+
                             lv_dropdown_set_selected(
                                 objects.buzzer_options,
                                 current
                             );
 
 
-                            buzzer_set_mode(
-                                current
+                            // ---------------------------------
+                            // Force redraw
+                            // ---------------------------------
+
+                            lv_obj_invalidate(
+                                objects.buzzer_options
+                            );
+
+
+                            Serial.print(
+                                "D1 BUZZER MODE -> "
+                            );
+
+
+                            Serial.println(
+                                current + 1
                             );
                         }
                     }
@@ -2175,20 +2251,38 @@ static void buttons_run(void)
 
 
                         // ---------------------------------
-                        // THEME
+                        // CALIBRATION
                         // ---------------------------------
 
-                        case SETTINGS_OPTION_THEME:
+                        case SETTINGS_OPTION_CALIBRATION:
 
                             Serial.println(
-                                "ACTION: THEME"
+                                "ACTION: CALIBRATION"
+                            );
+
+
+                            action_go_to_touch_calibration(
+                                NULL
                             );
 
                             break;
 
 
                         // ---------------------------------
-                        // BACK
+                        // V/C RANGE
+                        // ---------------------------------
+
+                        case SETTINGS_OPTION_VC_RANGE:
+
+                            Serial.println(
+                                "ACTION: V/C RANGE"
+                            );
+
+                            break;
+
+
+                        // ---------------------------------
+                        // EXIT
                         // ---------------------------------
 
                         case SETTINGS_OPTION_BACK:
@@ -2198,7 +2292,7 @@ static void buttons_run(void)
                             );
 
 
-                            action_go_to_main_screen(
+                            action_exit_to_main_page(
                                 NULL
                             );
 
@@ -2227,7 +2321,7 @@ static void buttons_run(void)
                     );
 
 
-                    action_go_to_settings_page(
+                    action_go_from_buzzer_settings_page_to_settings_page(
                         NULL
                     );
                 }

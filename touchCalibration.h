@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-void touch_calibration_start();
+void touch_calibration_start(void);
 
 #ifdef __cplusplus
 }

@@ -8,6 +8,8 @@
 #include "styles.h"
 #include "ui.h"
 
+#include "../tasks.h"
+
 
 // ==================================================
 // OBJECTS
@@ -17,17 +19,54 @@ objects_t objects;
 
 
 // ==================================================
-// EVENT HANDLERS
+// EVENT OBJECT
 // ==================================================
 
 lv_obj_t *tick_value_change_obj;
 
 
 // ==================================================
+// BUZZER DROPDOWN EVENT
+// ==================================================
+
+static void event_handler_buzzer_options(
+    lv_event_t *e
+)
+{
+    if (
+        lv_event_get_code(e) !=
+        LV_EVENT_VALUE_CHANGED
+    )
+    {
+        return;
+    }
+
+    lv_obj_t *obj =
+        lv_event_get_target(e);
+
+    if (
+        obj == NULL
+    )
+    {
+        return;
+    }
+
+    uint16_t selected =
+        lv_dropdown_get_selected(
+            obj
+        );
+
+    buzzer_set_mode(
+        (uint8_t)selected
+    );
+}
+
+
+// ==================================================
 // MAIN SCREEN
 // ==================================================
 
-void create_screen_main()
+void create_screen_main(void)
 {
     lv_obj_t *obj =
         lv_obj_create(0);
@@ -47,361 +86,318 @@ void create_screen_main()
         240
     );
 
+
+    lv_obj_t *parent_obj =
+        obj;
+
+
+    // =================================================
+    // VOLTAGE
+    // =================================================
+
     {
-        lv_obj_t *parent_obj =
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.voltage =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            92,
+            45
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "Voltage"
+        );
+    }
+
+
+    // =================================================
+    // SETTINGS BUTTON
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_btn_create(parent_obj);
+
+        objects.btn_settings =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            233,
+            167
+        );
+
+        lv_obj_set_size(
+            obj,
+            82,
+            50
+        );
+
+        lv_obj_add_event_cb(
+            obj,
+            action_go_to_settings_page,
+            LV_EVENT_PRESSED,
+            NULL
+        );
+
+
+        lv_obj_t *button_parent =
             obj;
 
 
-        // =================================================
-        // VOLTAGE
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            objects.voltage =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                92,
-                45
+        lv_obj_t *label =
+            lv_label_create(
+                button_parent
             );
 
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
-
-            lv_label_set_text_static(
-                obj,
-                "Voltage"
-            );
-        }
-
-
-        // =================================================
-        // SETTINGS BUTTON
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_btn_create(
-                    parent_obj
-                );
-
-            // مهم:
-            // ذخیره pointer دکمه برای navigation فیزیکی
-            objects.settings_button =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                233,
-                167
-            );
-
-            lv_obj_set_size(
-                obj,
-                82,
-                50
-            );
-
-            lv_obj_add_event_cb(
-                obj,
-                action_go_to_settings_page,
-                LV_EVENT_PRESSED,
-                NULL
-            );
-
-            {
-                lv_obj_t *parent_obj =
-                    obj;
-
-                {
-                    lv_obj_t *obj =
-                        lv_label_create(
-                            parent_obj
-                        );
-
-                    lv_obj_set_pos(
-                        obj,
-                        0,
-                        0
-                    );
-
-                    lv_obj_set_size(
-                        obj,
-                        LV_SIZE_CONTENT,
-                        LV_SIZE_CONTENT
-                    );
-
-                    lv_obj_set_style_align(
-                        obj,
-                        LV_ALIGN_CENTER,
-                        LV_PART_MAIN |
-                        LV_STATE_DEFAULT
-                    );
-
-                    lv_label_set_text_static(
-                        obj,
-                        "SETTINGS"
-                    );
-                }
-            }
-        }
-
-
-        // =================================================
-        // CURRENT
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            objects.current =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                92,
-                68
-            );
-
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
-
-            lv_label_set_text_static(
-                obj,
-                "Current"
-            );
-        }
-
-
-        // =================================================
-        // STATUS LED
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_led_create(
-                    parent_obj
-                );
-
-            objects.obj0 =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                242,
-                44
-            );
-
-            lv_obj_set_size(
-                obj,
-                32,
-                32
-            );
-
-            lv_led_set_color(
-                obj,
-                lv_color_hex(
-                    0x0000ff
-                )
-            );
-
-            lv_led_set_brightness(
-                obj,
-                255
-            );
-        }
-
-
-        // =================================================
-        // STATUS
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            lv_obj_set_pos(
-                obj,
-                233,
-                12
-            );
-
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
-
-            lv_label_set_text_static(
-                obj,
-                "STATUS"
-            );
-        }
-
-
-        // =================================================
-        // VOLTAGE:
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            lv_obj_set_pos(
-                obj,
-                11,
-                44
-            );
-
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
-
-            lv_label_set_text_static(
-                obj,
-                "VOLTAGE:"
-            );
-        }
-
-
-        // =================================================
-        // CURRENT:
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            lv_obj_set_pos(
-                obj,
-                11,
-                68
-            );
-
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
-
-            lv_label_set_text_static(
-                obj,
-                "CURRENT:"
-            );
-        }
-
-
-        // =================================================
-        // ERROR BOX
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_msgbox_create(
-                    parent_obj,
-                    "",
-                    "",
-                    0,
-                    true
-                );
-
-            objects.error_box =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                70,
-                80
-            );
-
-            lv_obj_set_size(
-                obj,
-                180,
-                100
-            );
-
-            lv_obj_set_style_align(
-                obj,
-                LV_ALIGN_DEFAULT,
-                LV_PART_MAIN |
-                LV_STATE_DEFAULT
-            );
-
-            lv_obj_add_flag(
-                obj,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-
-
-        // =================================================
-        // LOW VOLTAGE LABEL
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            objects.low_voltage_label =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                103,
-                126
-            );
-
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
-
-            lv_label_set_text_static(
-                obj,
-                "LOW VOLTAGE !"
-            );
-
-            lv_obj_set_style_text_color(
-                obj,
-                lv_color_hex(
-                    0xFFFFFF
-                ),
-                LV_PART_MAIN |
-                LV_STATE_DEFAULT
-            );
-
-            lv_obj_add_flag(
-                obj,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
+        lv_obj_set_pos(
+            label,
+            0,
+            0
+        );
+
+        lv_obj_set_size(
+            label,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_obj_set_style_align(
+            label,
+            LV_ALIGN_CENTER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_label_set_text_static(
+            label,
+            "SETTINGS"
+        );
     }
+
+
+    // =================================================
+    // CURRENT
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.current =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            92,
+            68
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "Current"
+        );
+    }
+
+
+    // =================================================
+    // STATUS LED
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_led_create(parent_obj);
+
+        objects.obj0 =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            242,
+            44
+        );
+
+        lv_obj_set_size(
+            obj,
+            32,
+            32
+        );
+
+        lv_led_set_color(
+            obj,
+            lv_color_hex(0x0000FF)
+        );
+
+        lv_led_set_brightness(
+            obj,
+            255
+        );
+    }
+
+
+    // =================================================
+    // STATUS LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            233,
+            12
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "STATUS"
+        );
+    }
+
+
+    // =================================================
+    // VOLTAGE LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            11,
+            44
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "VOLTAGE:"
+        );
+    }
+
+
+    // =================================================
+    // CURRENT LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            11,
+            68
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "CURRENT:"
+        );
+    }
+
+
+    // =================================================
+    // ERROR BOX
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_msgbox_create(
+                parent_obj,
+                "",
+                "",
+                0,
+                true
+            );
+
+        objects.error_box =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            70,
+            80
+        );
+
+        lv_obj_set_size(
+            obj,
+            180,
+            100
+        );
+
+        lv_obj_set_style_align(
+            obj,
+            LV_ALIGN_DEFAULT,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+    }
+
+
+    // =================================================
+    // LOW VOLTAGE LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.low_voltage_label =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            103,
+            126
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "LOW VOLTAGE !"
+        );
+    }
+
 
     tick_screen_main();
 }
@@ -411,21 +407,21 @@ void create_screen_main()
 // MAIN TICK
 // ==================================================
 
-void tick_screen_main()
+void tick_screen_main(void)
 {
 }
 
 
 // ==================================================
-// SETTINGS SCREEN
+// SETTINGS PAGE
 // ==================================================
 
-void create_screen_settings()
+void create_screen_settings_page(void)
 {
     lv_obj_t *obj =
         lv_obj_create(0);
 
-    objects.settings =
+    objects.settings_page =
         obj;
 
     lv_obj_set_pos(
@@ -440,218 +436,292 @@ void create_screen_settings()
         240
     );
 
+
+    lv_obj_t *parent_obj =
+        obj;
+
+
+    // =================================================
+    // EXIT
+    // =================================================
+
     {
-        lv_obj_t *parent_obj =
+        lv_obj_t *obj =
+            lv_btn_create(parent_obj);
+
+        objects.exit_settings =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            257,
+            195
+        );
+
+        lv_obj_set_size(
+            obj,
+            52,
+            34
+        );
+
+        lv_obj_add_event_cb(
+            obj,
+            action_exit_to_main_page,
+            LV_EVENT_PRESSED,
+            NULL
+        );
+
+
+        lv_obj_t *button_parent =
             obj;
 
 
-        // =================================================
-        // BACK BUTTON
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_btn_create(
-                    parent_obj
-                );
-
-            // مهم:
-            objects.back_button =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                13,
-                195
+        lv_obj_t *label =
+            lv_label_create(
+                button_parent
             );
 
-            lv_obj_set_size(
-                obj,
-                53,
-                36
-            );
+        lv_obj_set_pos(
+            label,
+            0,
+            0
+        );
 
-            lv_obj_add_event_cb(
-                obj,
-                action_go_to_main_screen,
-                LV_EVENT_PRESSED,
-                NULL
-            );
+        lv_obj_set_size(
+            label,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
 
-            {
-                lv_obj_t *parent_obj =
-                    obj;
+        lv_obj_set_style_align(
+            label,
+            LV_ALIGN_CENTER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
 
-                {
-                    lv_obj_t *obj =
-                        lv_label_create(
-                            parent_obj
-                        );
-
-                    lv_obj_set_pos(
-                        obj,
-                        0,
-                        0
-                    );
-
-                    lv_obj_set_size(
-                        obj,
-                        LV_SIZE_CONTENT,
-                        LV_SIZE_CONTENT
-                    );
-
-                    lv_obj_set_style_align(
-                        obj,
-                        LV_ALIGN_CENTER,
-                        LV_PART_MAIN |
-                        LV_STATE_DEFAULT
-                    );
-
-                    lv_label_set_text_static(
-                        obj,
-                        "Back"
-                    );
-                }
-            }
-        }
-
-
-        // =================================================
-        // BUZZER BUTTON
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_btn_create(
-                    parent_obj
-                );
-
-            // مهم:
-            objects.buzzer_button =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                13,
-                26
-            );
-
-            lv_obj_set_size(
-                obj,
-                76,
-                42
-            );
-
-            lv_obj_add_event_cb(
-                obj,
-                action_go_to_buzzer_settings,
-                LV_EVENT_PRESSED,
-                NULL
-            );
-
-            {
-                lv_obj_t *parent_obj =
-                    obj;
-
-                {
-                    lv_obj_t *obj =
-                        lv_label_create(
-                            parent_obj
-                        );
-
-                    lv_obj_set_pos(
-                        obj,
-                        0,
-                        0
-                    );
-
-                    lv_obj_set_size(
-                        obj,
-                        LV_SIZE_CONTENT,
-                        LV_SIZE_CONTENT
-                    );
-
-                    lv_obj_set_style_align(
-                        obj,
-                        LV_ALIGN_CENTER,
-                        LV_PART_MAIN |
-                        LV_STATE_DEFAULT
-                    );
-
-                    lv_label_set_text_static(
-                        obj,
-                        "BUZZER"
-                    );
-                }
-            }
-        }
-
-
-        // =================================================
-        // THEME BUTTON
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_btn_create(
-                    parent_obj
-                );
-
-            // مهم:
-            objects.theme_button =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                13,
-                90
-            );
-
-            lv_obj_set_size(
-                obj,
-                76,
-                44
-            );
-
-            {
-                lv_obj_t *parent_obj =
-                    obj;
-
-                {
-                    lv_obj_t *obj =
-                        lv_label_create(
-                            parent_obj
-                        );
-
-                    lv_obj_set_pos(
-                        obj,
-                        0,
-                        0
-                    );
-
-                    lv_obj_set_size(
-                        obj,
-                        LV_SIZE_CONTENT,
-                        LV_SIZE_CONTENT
-                    );
-
-                    lv_obj_set_style_align(
-                        obj,
-                        LV_ALIGN_CENTER,
-                        LV_PART_MAIN |
-                        LV_STATE_DEFAULT
-                    );
-
-                    lv_label_set_text_static(
-                        obj,
-                        "THEME"
-                    );
-                }
-            }
-        }
+        lv_label_set_text_static(
+            label,
+            "EXIT"
+        );
     }
 
-    tick_screen_settings();
+
+    // =================================================
+    // BUZZER
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_btn_create(parent_obj);
+
+        objects.buzzer =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            8,
+            49
+        );
+
+        lv_obj_set_size(
+            obj,
+            110,
+            42
+        );
+
+        lv_obj_add_event_cb(
+            obj,
+            action_go_to_buzzer_settings,
+            LV_EVENT_PRESSED,
+            NULL
+        );
+
+
+        lv_obj_t *button_parent =
+            obj;
+
+
+        lv_obj_t *label =
+            lv_label_create(
+                button_parent
+            );
+
+        lv_obj_set_pos(
+            label,
+            0,
+            0
+        );
+
+        lv_obj_set_size(
+            label,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_obj_set_style_align(
+            label,
+            LV_ALIGN_CENTER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_label_set_text_static(
+            label,
+            "BUZZER"
+        );
+    }
+
+
+    // =================================================
+    // TOUCH CALIBRATION
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_btn_create(parent_obj);
+
+        objects.touch_calibration =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            8,
+            109
+        );
+
+        lv_obj_set_size(
+            obj,
+            110,
+            41
+        );
+
+        lv_obj_add_event_cb(
+            obj,
+            action_go_to_touch_calibration,
+            LV_EVENT_PRESSED,
+            NULL
+        );
+
+
+        lv_obj_t *button_parent =
+            obj;
+
+
+        lv_obj_t *label =
+            lv_label_create(
+                button_parent
+            );
+
+        lv_obj_set_pos(
+            label,
+            0,
+            0
+        );
+
+        lv_obj_set_size(
+            label,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_obj_set_style_align(
+            label,
+            LV_ALIGN_CENTER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_label_set_text_static(
+            label,
+            "CALIBRATION"
+        );
+    }
+
+
+    // =================================================
+    // VOLTAGE/CURRENT RANGE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_btn_create(parent_obj);
+
+        objects.voltage_range =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            9,
+            167
+        );
+
+        lv_obj_set_size(
+            obj,
+            110,
+            43
+        );
+
+
+        lv_obj_t *button_parent =
+            obj;
+
+
+        lv_obj_t *label =
+            lv_label_create(
+                button_parent
+            );
+
+        lv_obj_set_pos(
+            label,
+            0,
+            0
+        );
+
+        lv_obj_set_size(
+            label,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_obj_set_style_align(
+            label,
+            LV_ALIGN_CENTER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_label_set_text_static(
+            label,
+            "V/C RANGE"
+        );
+    }
+
+
+    // =================================================
+    // SETTINGS TITLE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            134,
+            12
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "SETTINGS"
+        );
+    }
+
+
+    tick_screen_settings_page();
 }
 
 
@@ -659,21 +729,21 @@ void create_screen_settings()
 // SETTINGS TICK
 // ==================================================
 
-void tick_screen_settings()
+void tick_screen_settings_page(void)
 {
 }
 
 
 // ==================================================
-// BUZZER SCREEN
+// BUZZER SETTINGS
 // ==================================================
 
-void create_screen_buzzer()
+void create_screen_buzzer_settings(void)
 {
     lv_obj_t *obj =
         lv_obj_create(0);
 
-    objects.buzzer =
+    objects.buzzer_settings =
         obj;
 
     lv_obj_set_pos(
@@ -688,75 +758,152 @@ void create_screen_buzzer()
         240
     );
 
+
+    lv_obj_t *parent_obj =
+        obj;
+
+
+    // =================================================
+    // DROPDOWN
+    // =================================================
+
     {
-        lv_obj_t *parent_obj =
+        lv_obj_t *obj =
+            lv_dropdown_create(parent_obj);
+
+        objects.buzzer_options =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            85,
+            102
+        );
+
+        lv_obj_set_size(
+            obj,
+            150,
+            LV_SIZE_CONTENT
+        );
+
+        lv_dropdown_set_options_static(
+            obj,
+            "MODE 1\n"
+            "MODE 2\n"
+            "MODE 3"
+        );
+
+        lv_dropdown_set_selected(
+            obj,
+            buzzer_get_mode()
+        );
+
+
+        lv_obj_add_event_cb(
+            obj,
+            event_handler_buzzer_options,
+            LV_EVENT_VALUE_CHANGED,
+            NULL
+        );
+    }
+
+
+    // =================================================
+    // TITLE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.buzzer_settings_page_label =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            94,
+            24
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "BUZZER SETTINGS"
+        );
+    }
+
+
+    // =================================================
+    // BACK BUTTON
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_btn_create(parent_obj);
+
+        objects.buzzer_settings_page_back_button =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            16,
+            189
+        );
+
+        lv_obj_set_size(
+            obj,
+            78,
+            41
+        );
+
+        lv_obj_add_event_cb(
+            obj,
+            action_go_from_buzzer_settings_page_to_settings_page,
+            LV_EVENT_PRESSED,
+            NULL
+        );
+
+
+        lv_obj_t *button_parent =
             obj;
 
 
-        // =================================================
-        // TITLE
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_label_create(
-                    parent_obj
-                );
-
-            lv_obj_set_pos(
-                obj,
-                94,
-                15
+        lv_obj_t *label =
+            lv_label_create(
+                button_parent
             );
 
-            lv_obj_set_size(
-                obj,
-                LV_SIZE_CONTENT,
-                LV_SIZE_CONTENT
-            );
+        lv_obj_set_pos(
+            label,
+            0,
+            0
+        );
 
-            lv_label_set_text_static(
-                obj,
-                "BUZZER SETTINGS"
-            );
-        }
+        lv_obj_set_size(
+            label,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
 
+        lv_obj_set_style_align(
+            label,
+            LV_ALIGN_CENTER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
 
-        // =================================================
-        // BUZZER OPTIONS
-        // =================================================
-
-        {
-            lv_obj_t *obj =
-                lv_dropdown_create(
-                    parent_obj
-                );
-
-            objects.buzzer_options =
-                obj;
-
-            lv_obj_set_pos(
-                obj,
-                91,
-                89
-            );
-
-            lv_obj_set_size(
-                obj,
-                150,
-                LV_SIZE_CONTENT
-            );
-
-            lv_dropdown_set_options(
-                obj,
-                "MODE 1\n"
-                "MODE 2\n"
-                "MODE 3"
-            );
-        }
+        lv_label_set_text_static(
+            label,
+            "BACK"
+        );
     }
 
-    tick_screen_buzzer();
+
+    tick_screen_buzzer_settings();
 }
 
 
@@ -764,24 +911,28 @@ void create_screen_buzzer()
 // BUZZER TICK
 // ==================================================
 
-void tick_screen_buzzer()
+void tick_screen_buzzer_settings(void)
 {
 }
 
 
 // ==================================================
-// TICK SYSTEM
+// TICK FUNCTIONS
 // ==================================================
 
-typedef void (*tick_screen_func_t)();
+typedef void (*tick_screen_func_t)(void);
 
 tick_screen_func_t tick_screen_funcs[] =
 {
     tick_screen_main,
-    tick_screen_settings,
-    tick_screen_buzzer
+    tick_screen_settings_page,
+    tick_screen_buzzer_settings
 };
 
+
+// ==================================================
+// TICK SCREEN
+// ==================================================
 
 void tick_screen(
     int screen_index
@@ -798,6 +949,10 @@ void tick_screen(
     }
 }
 
+
+// ==================================================
+// TICK BY ID
+// ==================================================
 
 void tick_screen_by_id(
     enum ScreensEnum screenId
@@ -905,33 +1060,30 @@ ext_font_desc_t fonts[] =
 // THEME
 // ==================================================
 
-uint32_t active_theme_index =
-    0;
+uint32_t active_theme_index = 0;
 
 
 // ==================================================
 // CREATE SCREENS
 // ==================================================
 
-void create_screens()
+void create_screens(void)
 {
+    // ----------------------------------------------
+    // Default LVGL theme
+    // ----------------------------------------------
+
     lv_disp_t *dispp =
         lv_disp_get_default();
-
 
     lv_theme_t *theme =
         lv_theme_default_init(
             dispp,
-            lv_palette_main(
-                LV_PALETTE_BLUE
-            ),
-            lv_palette_main(
-                LV_PALETTE_RED
-            ),
+            lv_palette_main(LV_PALETTE_BLUE),
+            lv_palette_main(LV_PALETTE_RED),
             false,
             LV_FONT_DEFAULT
         );
-
 
     lv_disp_set_theme(
         dispp,
@@ -939,13 +1091,13 @@ void create_screens()
     );
 
 
-    // =================================================
-    // CREATE
-    // =================================================
+    // ----------------------------------------------
+    // Create screens
+    // ----------------------------------------------
 
     create_screen_main();
 
-    create_screen_settings();
+    create_screen_settings_page();
 
-    create_screen_buzzer();
+    create_screen_buzzer_settings();
 }
