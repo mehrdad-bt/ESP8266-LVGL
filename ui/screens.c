@@ -41,20 +41,22 @@ static void event_handler_buzzer_options(
         return;
     }
 
+
     lv_obj_t *obj =
         lv_event_get_target(e);
 
-    if (
-        obj == NULL
-    )
+
+    if (obj == NULL)
     {
         return;
     }
+
 
     uint16_t selected =
         lv_dropdown_get_selected(
             obj
         );
+
 
     buzzer_set_mode(
         (uint8_t)selected
@@ -63,7 +65,7 @@ static void event_handler_buzzer_options(
 
 
 // ==================================================
-// MAIN SCREEN
+// MAIN
 // ==================================================
 
 void create_screen_main(void)
@@ -252,7 +254,7 @@ void create_screen_main(void)
 
 
     // =================================================
-    // STATUS LABEL
+    // STATUS
     // =================================================
 
     {
@@ -279,7 +281,7 @@ void create_screen_main(void)
 
 
     // =================================================
-    // VOLTAGE LABEL
+    // VOLTAGE STATIC LABEL
     // =================================================
 
     {
@@ -306,7 +308,7 @@ void create_screen_main(void)
 
 
     // =================================================
-    // CURRENT LABEL
+    // CURRENT STATIC LABEL
     // =================================================
 
     {
@@ -413,7 +415,7 @@ void tick_screen_main(void)
 
 
 // ==================================================
-// SETTINGS PAGE
+// SETTINGS
 // ==================================================
 
 void create_screen_settings_page(void)
@@ -472,14 +474,8 @@ void create_screen_settings_page(void)
         );
 
 
-        lv_obj_t *button_parent =
-            obj;
-
-
         lv_obj_t *label =
-            lv_label_create(
-                button_parent
-            );
+            lv_label_create(obj);
 
         lv_obj_set_pos(
             label,
@@ -537,14 +533,8 @@ void create_screen_settings_page(void)
         );
 
 
-        lv_obj_t *button_parent =
-            obj;
-
-
         lv_obj_t *label =
-            lv_label_create(
-                button_parent
-            );
+            lv_label_create(obj);
 
         lv_obj_set_pos(
             label,
@@ -572,7 +562,7 @@ void create_screen_settings_page(void)
 
 
     // =================================================
-    // TOUCH CALIBRATION
+    // CALIBRATION
     // =================================================
 
     {
@@ -602,14 +592,8 @@ void create_screen_settings_page(void)
         );
 
 
-        lv_obj_t *button_parent =
-            obj;
-
-
         lv_obj_t *label =
-            lv_label_create(
-                button_parent
-            );
+            lv_label_create(obj);
 
         lv_obj_set_pos(
             label,
@@ -637,7 +621,7 @@ void create_screen_settings_page(void)
 
 
     // =================================================
-    // VOLTAGE/CURRENT RANGE
+    // V/C RANGE
     // =================================================
 
     {
@@ -659,15 +643,16 @@ void create_screen_settings_page(void)
             43
         );
 
-
-        lv_obj_t *button_parent =
-            obj;
+        lv_obj_add_event_cb(
+            obj,
+            action_go_to_v_c_range_settings,
+            LV_EVENT_PRESSED,
+            NULL
+        );
 
 
         lv_obj_t *label =
-            lv_label_create(
-                button_parent
-            );
+            lv_label_create(obj);
 
         lv_obj_set_pos(
             label,
@@ -695,7 +680,7 @@ void create_screen_settings_page(void)
 
 
     // =================================================
-    // SETTINGS TITLE
+    // TITLE
     // =================================================
 
     {
@@ -839,7 +824,7 @@ void create_screen_buzzer_settings(void)
 
 
     // =================================================
-    // BACK BUTTON
+    // BACK
     // =================================================
 
     {
@@ -869,14 +854,8 @@ void create_screen_buzzer_settings(void)
         );
 
 
-        lv_obj_t *button_parent =
-            obj;
-
-
         lv_obj_t *label =
-            lv_label_create(
-                button_parent
-            );
+            lv_label_create(obj);
 
         lv_obj_set_pos(
             label,
@@ -917,16 +896,462 @@ void tick_screen_buzzer_settings(void)
 
 
 // ==================================================
-// TICK FUNCTIONS
+// V/C RANGE
+// ==================================================
+
+void create_screen_v_c_range_settings(void)
+{
+    lv_obj_t *obj =
+        lv_obj_create(0);
+
+    objects.v_c_range_settings =
+        obj;
+
+    lv_obj_set_pos(
+        obj,
+        0,
+        0
+    );
+
+    lv_obj_set_size(
+        obj,
+        320,
+        240
+    );
+
+
+    lv_obj_t *parent_obj =
+        obj;
+
+
+    // =================================================
+    // TITLE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            47,
+            11
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "VOLTAGE AND CURRENT SETTINGS"
+        );
+    }
+
+
+    // =================================================
+    // VOLTAGE MIN
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_slider_create(parent_obj);
+
+        objects.voltage_minimum =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            61,
+            83
+        );
+
+        lv_obj_set_size(
+            obj,
+            150,
+            10
+        );
+
+        lv_slider_set_range(
+            obj,
+            0,
+            30
+        );
+
+        lv_slider_set_value(
+            obj,
+            20,
+            LV_ANIM_OFF
+        );
+    }
+
+
+    // =================================================
+    // VOLTAGE MIN LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            6,
+            80
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "V Min"
+        );
+    }
+
+
+    // =================================================
+    // VOLTAGE MAX LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            6,
+            119
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "V Max"
+        );
+    }
+
+
+    // =================================================
+    // CURRENT MIN LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            4,
+            154
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "C Min"
+        );
+    }
+
+
+    // =================================================
+    // CURRENT MAX LABEL
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        lv_obj_set_pos(
+            obj,
+            4,
+            190
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "C Max"
+        );
+    }
+
+
+    // =================================================
+    // V MIN VALUE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.voltage_min_value =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            237,
+            80
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "20 V"
+        );
+    }
+
+
+    // =================================================
+    // V MAX VALUE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.voltage_max_value =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            237,
+            112
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "24 V"
+        );
+    }
+
+
+    // =================================================
+    // C MIN VALUE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.current_min_value =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            237,
+            154
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "1 A"
+        );
+    }
+
+
+    // =================================================
+    // C MAX VALUE
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_label_create(parent_obj);
+
+        objects.current_max_value =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            237,
+            188
+        );
+
+        lv_obj_set_size(
+            obj,
+            LV_SIZE_CONTENT,
+            LV_SIZE_CONTENT
+        );
+
+        lv_label_set_text_static(
+            obj,
+            "2 A"
+        );
+    }
+
+
+    // =================================================
+    // VOLTAGE MAX
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_slider_create(parent_obj);
+
+        objects.voltage_maximum =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            61,
+            123
+        );
+
+        lv_obj_set_size(
+            obj,
+            150,
+            10
+        );
+
+        lv_slider_set_range(
+            obj,
+            0,
+            30
+        );
+
+        lv_slider_set_value(
+            obj,
+            24,
+            LV_ANIM_OFF
+        );
+    }
+
+
+    // =================================================
+    // CURRENT MIN
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_slider_create(parent_obj);
+
+        objects.current_minimum =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            61,
+            160
+        );
+
+        lv_obj_set_size(
+            obj,
+            150,
+            10
+        );
+
+        lv_slider_set_range(
+            obj,
+            0,
+            3
+        );
+
+        lv_slider_set_value(
+            obj,
+            1,
+            LV_ANIM_OFF
+        );
+    }
+
+
+    // =================================================
+    // CURRENT MAX
+    // =================================================
+
+    {
+        lv_obj_t *obj =
+            lv_slider_create(parent_obj);
+
+        objects.current_maximum =
+            obj;
+
+        lv_obj_set_pos(
+            obj,
+            61,
+            194
+        );
+
+        lv_obj_set_size(
+            obj,
+            150,
+            10
+        );
+
+        lv_slider_set_range(
+            obj,
+            0,
+            3
+        );
+
+        lv_slider_set_value(
+            obj,
+            2,
+            LV_ANIM_OFF
+        );
+    }
+
+
+    tick_screen_v_c_range_settings();
+}
+
+
+// ==================================================
+// V/C TICK
+// ==================================================
+
+void tick_screen_v_c_range_settings(void)
+{
+}
+
+
+// ==================================================
+// TICK TABLE
 // ==================================================
 
 typedef void (*tick_screen_func_t)(void);
 
-tick_screen_func_t tick_screen_funcs[] =
+static tick_screen_func_t tick_screen_funcs[] =
 {
     tick_screen_main,
     tick_screen_settings_page,
-    tick_screen_buzzer_settings
+    tick_screen_buzzer_settings,
+    tick_screen_v_c_range_settings
 };
 
 
@@ -940,7 +1365,7 @@ void tick_screen(
 {
     if (
         screen_index >= 0 &&
-        screen_index < 3
+        screen_index < 4
     )
     {
         tick_screen_funcs[
@@ -1069,12 +1494,9 @@ uint32_t active_theme_index = 0;
 
 void create_screens(void)
 {
-    // ----------------------------------------------
-    // Default LVGL theme
-    // ----------------------------------------------
-
     lv_disp_t *dispp =
         lv_disp_get_default();
+
 
     lv_theme_t *theme =
         lv_theme_default_init(
@@ -1085,19 +1507,18 @@ void create_screens(void)
             LV_FONT_DEFAULT
         );
 
+
     lv_disp_set_theme(
         dispp,
         theme
     );
 
 
-    // ----------------------------------------------
-    // Create screens
-    // ----------------------------------------------
-
     create_screen_main();
 
     create_screen_settings_page();
 
     create_screen_buzzer_settings();
+
+    create_screen_v_c_range_settings();
 }

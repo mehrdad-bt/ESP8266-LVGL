@@ -292,10 +292,6 @@ void buzzer_set_mode(
     uint8_t mode
 )
 {
-    // ----------------------------------------------
-    // Validate mode
-    // ----------------------------------------------
-
     if (
         mode >=
         BUZZER_MODE_COUNT
@@ -306,28 +302,17 @@ void buzzer_set_mode(
     }
 
 
-    // ----------------------------------------------
-    // Save mode
-    // ----------------------------------------------
-
     buzzer_mode =
         mode;
 
 
-    // ----------------------------------------------
-    // Reset buzzer pattern
-    // ----------------------------------------------
-
     buzzer_step =
         0;
+
 
     buzzer_step_start =
         millis();
 
-
-    // ----------------------------------------------
-    // Stop current tone
-    // ----------------------------------------------
 
     buzzer_state =
         false;
@@ -338,13 +323,10 @@ void buzzer_set_mode(
     );
 
 
-    // ----------------------------------------------
-    // Debug
-    // ----------------------------------------------
-
     Serial.print(
         "BUZZER MODE -> "
     );
+
 
     Serial.println(
         buzzer_mode + 1
@@ -398,9 +380,6 @@ static void buzzer_run(void)
 
     // =================================================
     // MODE 1
-    //
-    // 200 ms ON
-    // 700 ms OFF
     // =================================================
 
     if (
@@ -468,11 +447,6 @@ static void buzzer_run(void)
 
     // =================================================
     // MODE 2
-    //
-    // BEEP
-    // PAUSE
-    // BEEP
-    // LONG PAUSE
     // =================================================
 
     if (
@@ -484,10 +458,6 @@ static void buzzer_run(void)
             buzzer_step
         )
         {
-            // -----------------------------------------
-            // Long pause
-            // -----------------------------------------
-
             case 0:
 
                 if (
@@ -516,10 +486,6 @@ static void buzzer_run(void)
                 break;
 
 
-            // -----------------------------------------
-            // First beep
-            // -----------------------------------------
-
             case 1:
 
                 if (
@@ -546,10 +512,6 @@ static void buzzer_run(void)
 
                 break;
 
-
-            // -----------------------------------------
-            // Pause between beeps
-            // -----------------------------------------
 
             case 2:
 
@@ -578,10 +540,6 @@ static void buzzer_run(void)
 
                 break;
 
-
-            // -----------------------------------------
-            // Second beep
-            // -----------------------------------------
 
             case 3:
 
@@ -635,9 +593,6 @@ static void buzzer_run(void)
 
     // =================================================
     // MODE 3
-    //
-    // 500 ms ON
-    // 500 ms OFF
     // =================================================
 
     if (
@@ -707,10 +662,6 @@ static void buzzer_run(void)
 
 static void buzzer_task(void)
 {
-    // ----------------------------------------------
-    // No data received
-    // ----------------------------------------------
-
     if (
         !system_state.data_received
     )
@@ -720,10 +671,6 @@ static void buzzer_task(void)
         return;
     }
 
-
-    // ----------------------------------------------
-    // Connection lost
-    // ----------------------------------------------
 
     if (
         system_state.connection_lost
@@ -735,10 +682,6 @@ static void buzzer_task(void)
     }
 
 
-    // ----------------------------------------------
-    // No low voltage
-    // ----------------------------------------------
-
     if (
         !system_state.low_voltage
     )
@@ -748,10 +691,6 @@ static void buzzer_task(void)
         return;
     }
 
-
-    // ----------------------------------------------
-    // Run selected mode
-    // ----------------------------------------------
 
     buzzer_run();
 }
@@ -772,10 +711,6 @@ static void set_status_led(
         return;
     }
 
-
-    // =================================================
-    // CONSTANT COLOR
-    // =================================================
 
     if (
         color == LED_BLUE ||
@@ -813,10 +748,6 @@ static void set_status_led(
         return;
     }
 
-
-    // =================================================
-    // BLINK COLOR
-    // =================================================
 
     if (
         color == LED_RED ||
@@ -1055,34 +986,24 @@ static void safety_task(void)
         system_state.voltage_ok =
             false;
 
-
         system_state.current_ok =
             false;
-
 
         system_state.system_ok =
             false;
 
-
         system_state.low_voltage =
             false;
-
 
         system_state.uart_timeout =
             false;
 
-
         system_state.connection_lost =
             false;
-
 
         return;
     }
 
-
-    // =================================================
-    // CONNECTION TIMEOUT
-    // =================================================
 
     system_state.connection_lost =
         (
@@ -1096,10 +1017,6 @@ static void safety_task(void)
         system_state.connection_lost;
 
 
-    // =================================================
-    // VOLTAGE
-    // =================================================
-
     system_state.voltage_ok =
         (
             system_state.voltage >=
@@ -1109,10 +1026,6 @@ static void safety_task(void)
             VOLTAGE_MAX
         );
 
-
-    // =================================================
-    // CURRENT
-    // =================================================
 
     system_state.current_ok =
         (
@@ -1124,20 +1037,12 @@ static void safety_task(void)
         );
 
 
-    // =================================================
-    // LOW VOLTAGE
-    // =================================================
-
     system_state.low_voltage =
         (
             system_state.voltage <
             VOLTAGE_MIN
         );
 
-
-    // =================================================
-    // SYSTEM OK
-    // =================================================
 
     system_state.system_ok =
         (
@@ -1167,9 +1072,7 @@ static void show_low_voltage_error(void)
 
     lv_obj_set_style_bg_color(
         objects.error_box,
-        lv_color_hex(
-            0x8B0000
-        ),
+        lv_color_hex(0x8B0000),
         LV_PART_MAIN
     );
 
@@ -1183,9 +1086,7 @@ static void show_low_voltage_error(void)
 
     lv_obj_set_style_border_color(
         objects.error_box,
-        lv_color_hex(
-            0xFF4444
-        ),
+        lv_color_hex(0xFF4444),
         LV_PART_MAIN
     );
 
@@ -1212,9 +1113,7 @@ static void show_low_voltage_error(void)
 
     lv_obj_set_style_text_color(
         objects.low_voltage_label,
-        lv_color_hex(
-            0xFFFFFF
-        ),
+        lv_color_hex(0xFFFFFF),
         LV_PART_MAIN
     );
 
@@ -1249,9 +1148,7 @@ static void show_connection_lost_error(void)
 
     lv_obj_set_style_bg_color(
         objects.error_box,
-        lv_color_hex(
-            0xCC6600
-        ),
+        lv_color_hex(0xCC6600),
         LV_PART_MAIN
     );
 
@@ -1265,9 +1162,7 @@ static void show_connection_lost_error(void)
 
     lv_obj_set_style_border_color(
         objects.error_box,
-        lv_color_hex(
-            0xFFAA00
-        ),
+        lv_color_hex(0xFFAA00),
         LV_PART_MAIN
     );
 
@@ -1294,9 +1189,7 @@ static void show_connection_lost_error(void)
 
     lv_obj_set_style_text_color(
         objects.low_voltage_label,
-        lv_color_hex(
-            0xFFFFFF
-        ),
+        lv_color_hex(0xFFFFFF),
         LV_PART_MAIN
     );
 
@@ -1428,14 +1321,30 @@ static void gui_task(void)
 
     if (
         now - last_lvgl >=
-        5
+        10
     )
     {
         last_lvgl =
             now;
 
 
+        Serial.println(
+            "GUI: BEFORE LVGL"
+        );
+
+
+        ESP.wdtFeed();
+
+
         lv_timer_handler();
+
+
+        ESP.wdtFeed();
+
+
+        Serial.println(
+            "GUI: AFTER LVGL"
+        );
 
 
         ui_tick();
@@ -1455,10 +1364,6 @@ static void reset_selection_for_screen(
         screen
     )
     {
-        // ---------------------------------------------
-        // MAIN
-        // ---------------------------------------------
-
         case SCREEN_ID_MAIN:
 
             selected_option =
@@ -1467,10 +1372,6 @@ static void reset_selection_for_screen(
             break;
 
 
-        // ---------------------------------------------
-        // SETTINGS
-        // ---------------------------------------------
-
         case SCREEN_ID_SETTINGS:
 
             selected_option =
@@ -1478,10 +1379,6 @@ static void reset_selection_for_screen(
 
             break;
 
-
-        // ---------------------------------------------
-        // BUZZER
-        // ---------------------------------------------
 
         case SCREEN_ID_BUZZER:
 
@@ -1507,9 +1404,13 @@ static void reset_selection_for_screen(
             break;
 
 
-        // ---------------------------------------------
-        // DEFAULT
-        // ---------------------------------------------
+        case SCREEN_ID_V_C_RANGE:
+
+            selected_option =
+                0;
+
+            break;
+
 
         default:
 
@@ -1552,10 +1453,6 @@ static void update_button_selection(void)
         }
 
 
-        // ---------------------------------------------
-        // Reset
-        // ---------------------------------------------
-
         lv_obj_set_style_border_width(
             objects.btn_settings,
             0,
@@ -1563,15 +1460,9 @@ static void update_button_selection(void)
         );
 
 
-        // ---------------------------------------------
-        // Selected
-        // ---------------------------------------------
-
         lv_obj_set_style_border_color(
             objects.btn_settings,
-            lv_color_hex(
-                0x00FF00
-            ),
+            lv_color_hex(0x00FF00),
             LV_PART_MAIN
         );
 
@@ -1628,10 +1519,6 @@ static void update_button_selection(void)
         }
 
 
-        // ---------------------------------------------
-        // Remove all borders
-        // ---------------------------------------------
-
         lv_obj_set_style_border_width(
             objects.buzzer,
             0,
@@ -1664,10 +1551,6 @@ static void update_button_selection(void)
             NULL;
 
 
-        // ---------------------------------------------
-        // BUZZER
-        // ---------------------------------------------
-
         if (
             selected_option ==
             SETTINGS_OPTION_BUZZER
@@ -1681,12 +1564,6 @@ static void update_button_selection(void)
                 "LCD SELECTED: BUZZER"
             );
         }
-
-
-        // ---------------------------------------------
-        // CALIBRATION
-        // ---------------------------------------------
-
         else if (
             selected_option ==
             SETTINGS_OPTION_CALIBRATION
@@ -1700,12 +1577,6 @@ static void update_button_selection(void)
                 "LCD SELECTED: CALIBRATION"
             );
         }
-
-
-        // ---------------------------------------------
-        // V/C RANGE
-        // ---------------------------------------------
-
         else if (
             selected_option ==
             SETTINGS_OPTION_VC_RANGE
@@ -1719,12 +1590,6 @@ static void update_button_selection(void)
                 "LCD SELECTED: V/C RANGE"
             );
         }
-
-
-        // ---------------------------------------------
-        // EXIT
-        // ---------------------------------------------
-
         else if (
             selected_option ==
             SETTINGS_OPTION_BACK
@@ -1740,19 +1605,13 @@ static void update_button_selection(void)
         }
 
 
-        // ---------------------------------------------
-        // Green border
-        // ---------------------------------------------
-
         if (
             selected_btn != NULL
         )
         {
             lv_obj_set_style_border_color(
                 selected_btn,
-                lv_color_hex(
-                    0x00FF00
-                ),
+                lv_color_hex(0x00FF00),
                 LV_PART_MAIN
             );
 
@@ -1782,7 +1641,7 @@ static void update_button_selection(void)
 
 
     // =================================================
-    // BUZZER SCREEN
+    // BUZZER
     // =================================================
 
     if (
@@ -1805,6 +1664,19 @@ static void update_button_selection(void)
         }
 
 
+        return;
+    }
+
+
+    // =================================================
+    // V/C RANGE
+    // =================================================
+
+    if (
+        screen ==
+        SCREEN_ID_V_C_RANGE
+    )
+    {
         return;
     }
 }
@@ -1878,10 +1750,6 @@ static void buttons_run(void)
         millis();
 
 
-    // =================================================
-    // CURRENT SCREEN
-    // =================================================
-
     enum ScreensEnum current_screen =
         screen_manager_get();
 
@@ -1935,6 +1803,15 @@ static void buttons_run(void)
 
                 Serial.println(
                     "BUZZER"
+                );
+
+                break;
+
+
+            case SCREEN_ID_V_C_RANGE:
+
+                Serial.println(
+                    "V/C RANGE"
                 );
 
                 break;
@@ -2016,10 +1893,6 @@ static void buttons_run(void)
                 );
 
 
-                // =========================================
-                // MAIN
-                // =========================================
-
                 if (
                     screen_manager_is(
                         SCREEN_ID_MAIN
@@ -2033,10 +1906,6 @@ static void buttons_run(void)
                     update_button_selection();
                 }
 
-
-                // =========================================
-                // SETTINGS
-                // =========================================
 
                 else if (
                     screen_manager_is(
@@ -2060,10 +1929,6 @@ static void buttons_run(void)
                     update_button_selection();
                 }
 
-
-                // =========================================
-                // BUZZER
-                // =========================================
 
                 else if (
                     screen_manager_is(
@@ -2091,10 +1956,6 @@ static void buttons_run(void)
                                 );
 
 
-                            // ---------------------------------
-                            // Next option
-                            // ---------------------------------
-
                             current++;
 
 
@@ -2107,28 +1968,16 @@ static void buttons_run(void)
                             }
 
 
-                            // ---------------------------------
-                            // Update buzzer mode
-                            // ---------------------------------
-
                             buzzer_set_mode(
                                 (uint8_t)current
                             );
 
-
-                            // ---------------------------------
-                            // Update dropdown
-                            // ---------------------------------
 
                             lv_dropdown_set_selected(
                                 objects.buzzer_options,
                                 current
                             );
 
-
-                            // ---------------------------------
-                            // Force redraw
-                            // ---------------------------------
 
                             lv_obj_invalidate(
                                 objects.buzzer_options
@@ -2145,6 +1994,19 @@ static void buttons_run(void)
                             );
                         }
                     }
+                }
+
+
+                else if (
+                    screen_manager_is(
+                        SCREEN_ID_V_C_RANGE
+                    )
+                )
+                {
+                    /*
+                     * V/C physical controls
+                     * will be added later.
+                     */
                 }
             }
         }
@@ -2197,10 +2059,6 @@ static void buttons_run(void)
                 );
 
 
-                // =========================================
-                // MAIN
-                // =========================================
-
                 if (
                     screen_manager_is(
                         SCREEN_ID_MAIN
@@ -2218,10 +2076,6 @@ static void buttons_run(void)
                 }
 
 
-                // =========================================
-                // SETTINGS
-                // =========================================
-
                 else if (
                     screen_manager_is(
                         SCREEN_ID_SETTINGS
@@ -2232,10 +2086,6 @@ static void buttons_run(void)
                         selected_option
                     )
                     {
-                        // ---------------------------------
-                        // BUZZER
-                        // ---------------------------------
-
                         case SETTINGS_OPTION_BUZZER:
 
                             Serial.println(
@@ -2249,10 +2099,6 @@ static void buttons_run(void)
 
                             break;
 
-
-                        // ---------------------------------
-                        // CALIBRATION
-                        // ---------------------------------
 
                         case SETTINGS_OPTION_CALIBRATION:
 
@@ -2268,22 +2114,19 @@ static void buttons_run(void)
                             break;
 
 
-                        // ---------------------------------
-                        // V/C RANGE
-                        // ---------------------------------
-
                         case SETTINGS_OPTION_VC_RANGE:
 
                             Serial.println(
                                 "ACTION: V/C RANGE"
                             );
 
+
+                            action_go_to_v_c_range_settings(
+                                NULL
+                            );
+
                             break;
 
-
-                        // ---------------------------------
-                        // EXIT
-                        // ---------------------------------
 
                         case SETTINGS_OPTION_BACK:
 
@@ -2306,10 +2149,6 @@ static void buttons_run(void)
                 }
 
 
-                // =========================================
-                // BUZZER
-                // =========================================
-
                 else if (
                     screen_manager_is(
                         SCREEN_ID_BUZZER
@@ -2322,6 +2161,23 @@ static void buttons_run(void)
 
 
                     action_go_from_buzzer_settings_page_to_settings_page(
+                        NULL
+                    );
+                }
+
+
+                else if (
+                    screen_manager_is(
+                        SCREEN_ID_V_C_RANGE
+                    )
+                )
+                {
+                    Serial.println(
+                        "ACTION: SETTINGS"
+                    );
+
+
+                    action_go_from_v_c_range_settings_page_to_settings_page(
                         NULL
                     );
                 }
@@ -2352,15 +2208,11 @@ static void watchdog_task(void)
 
 
 // ==================================================
-// TASK INITIALIZATION
+// TASK INIT
 // ==================================================
 
 void tasks_init(void)
 {
-    // =================================================
-    // TIMING
-    // =================================================
-
     last_uart_data =
         millis();
 
@@ -2368,10 +2220,6 @@ void tasks_init(void)
     last_lvgl =
         millis();
 
-
-    // =================================================
-    // BUZZER
-    // =================================================
 
     pinMode(
         BUZZER_PIN,
@@ -2382,32 +2230,16 @@ void tasks_init(void)
     buzzer_stop();
 
 
-    // =================================================
-    // BUTTONS
-    // =================================================
-
     buttons_init();
 
-
-    // =================================================
-    // LED
-    // =================================================
 
     set_status_led(
         LED_BLUE
     );
 
 
-    // =================================================
-    // ERROR
-    // =================================================
-
     hide_status_error();
 
-
-    // =================================================
-    // SERIAL
-    // =================================================
 
     Serial.println();
 
@@ -2454,56 +2286,22 @@ void tasks_init(void)
 
 
 // ==================================================
-// MAIN TASK RUNNER
+// TASK RUNNER
 // ==================================================
 
 void tasks_run(void)
 {
-    // =================================================
-    // 1. BUTTON
-    // =================================================
-
     buttons_task();
-
-
-    // =================================================
-    // 2. UART
-    // =================================================
 
     uart_task();
 
-
-    // =================================================
-    // 3. SAFETY
-    // =================================================
-
     safety_task();
-
-
-    // =================================================
-    // 4. BUZZER
-    // =================================================
 
     buzzer_task();
 
-
-    // =================================================
-    // 5. LED
-    // =================================================
-
     led_task();
 
-
-    // =================================================
-    // 6. GUI
-    // =================================================
-
     gui_task();
-
-
-    // =================================================
-    // 7. WATCHDOG
-    // =================================================
 
     watchdog_task();
 }

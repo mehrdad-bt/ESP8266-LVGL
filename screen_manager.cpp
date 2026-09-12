@@ -18,6 +18,45 @@ static enum ScreensEnum current_screen =
 
 
 // ==================================================
+// GET SCREEN OBJECT
+// ==================================================
+
+static lv_obj_t *get_screen_object(
+    enum ScreensEnum screen
+)
+{
+    switch (
+        screen
+    )
+    {
+        case SCREEN_ID_MAIN:
+
+            return objects.main;
+
+
+        case SCREEN_ID_SETTINGS:
+
+            return objects.settings_page;
+
+
+        case SCREEN_ID_BUZZER:
+
+            return objects.buzzer_settings;
+
+
+        case SCREEN_ID_V_C_RANGE:
+
+            return objects.v_c_range_settings;
+
+
+        default:
+
+            return NULL;
+    }
+}
+
+
+// ==================================================
 // SHOW SCREEN OBJECT
 // ==================================================
 
@@ -26,54 +65,14 @@ static void show_screen_object(
 )
 {
     lv_obj_t *screen_obj =
-        NULL;
+        get_screen_object(
+            screen
+        );
 
 
-    // ==================================================
-    // FIND SCREEN OBJECT
-    // ==================================================
-
-    switch (
-        screen
-    )
-    {
-        case SCREEN_ID_MAIN:
-
-            screen_obj =
-                objects.main;
-
-            break;
-
-
-        case SCREEN_ID_SETTINGS:
-
-            screen_obj =
-                objects.settings_page;
-
-            break;
-
-
-        case SCREEN_ID_BUZZER:
-
-            screen_obj =
-                objects.buzzer_settings;
-
-            break;
-
-
-        default:
-
-            Serial.println(
-                "SCREEN ERROR: UNKNOWN SCREEN"
-            );
-
-            return;
-    }
-
-
-    // ==================================================
-    // CHECK OBJECT
-    // ==================================================
+    // =================================================
+    // CHECK
+    // =================================================
 
     if (
         screen_obj == NULL
@@ -87,40 +86,35 @@ static void show_screen_object(
     }
 
 
-    // ==================================================
+    // =================================================
     // LOAD SCREEN
-    // ==================================================
+    // =================================================
 
     lv_scr_load(
         screen_obj
     );
 
 
-    // ==================================================
-    // FORCE INVALIDATE
-    // ==================================================
+    // =================================================
+    // INVALIDATE SCREEN
+    // =================================================
 
     lv_obj_invalidate(
         screen_obj
     );
 
 
-    // ==================================================
-    // FORCE DISPLAY REFRESH
-    // ==================================================
-
-    lv_disp_t *disp =
-        lv_disp_get_default();
-
-
-    if (
-        disp != NULL
-    )
-    {
-        lv_refr_now(
-            disp
-        );
-    }
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT call lv_refr_now() here.
+     *
+     * LVGL will refresh during
+     * lv_timer_handler().
+     *
+     * This avoids forcing a rendering operation
+     * directly from the screen manager.
+     */
 }
 
 
@@ -153,81 +147,31 @@ void screen_manager_show(
     enum ScreensEnum screen
 )
 {
-    // ==================================================
-    // VALIDATE SCREEN
-    // ==================================================
+    // =================================================
+    // VALIDATE
+    // =================================================
 
-    switch (
-        screen
+    lv_obj_t *screen_obj =
+        get_screen_object(
+            screen
+        );
+
+
+    if (
+        screen_obj == NULL
     )
     {
-        case SCREEN_ID_MAIN:
+        Serial.println(
+            "SCREEN ERROR: INVALID SCREEN"
+        );
 
-            if (
-                objects.main == NULL
-            )
-            {
-                Serial.println(
-                    "SCREEN ERROR: MAIN OBJECT NULL"
-                );
-
-                return;
-            }
-
-            break;
-
-
-        case SCREEN_ID_SETTINGS:
-
-            if (
-                objects.settings_page == NULL
-            )
-            {
-                Serial.println(
-                    "SCREEN ERROR: SETTINGS OBJECT NULL"
-                );
-
-                return;
-            }
-
-            break;
-
-
-        case SCREEN_ID_BUZZER:
-
-            if (
-                objects.buzzer_settings == NULL
-            )
-            {
-                Serial.println(
-                    "SCREEN ERROR: BUZZER OBJECT NULL"
-                );
-
-                return;
-            }
-
-            break;
-
-
-        default:
-
-            Serial.println(
-                "SCREEN ERROR: INVALID SCREEN"
-            );
-
-            return;
+        return;
     }
 
 
-    // ==================================================
-    // IMPORTANT
-    //
-    // حتی اگر صفحه فعلی همان صفحه باشد،
-    // باز هم آن را reload می‌کنیم.
-    //
-    // برای Calibration لازم است چون TFT مستقیماً
-    // توسط tft.fillScreen() پاک شده است.
-    // ==================================================
+    // =================================================
+    // SAME SCREEN
+    // =================================================
 
     bool same_screen =
         (
@@ -236,26 +180,26 @@ void screen_manager_show(
         );
 
 
-    // ==================================================
-    // SET CURRENT SCREEN
-    // ==================================================
+    // =================================================
+    // SET CURRENT
+    // =================================================
 
     current_screen =
         screen;
 
 
-    // ==================================================
-    // LOAD / RELOAD SCREEN
-    // ==================================================
+    // =================================================
+    // LOAD
+    // =================================================
 
     show_screen_object(
         screen
     );
 
 
-    // ==================================================
+    // =================================================
     // DEBUG
-    // ==================================================
+    // =================================================
 
     Serial.print(
         "SCREEN -> "
@@ -294,6 +238,17 @@ void screen_manager_show(
                 same_screen
                 ? "BUZZER (RELOAD)"
                 : "BUZZER"
+            );
+
+            break;
+
+
+        case SCREEN_ID_V_C_RANGE:
+
+            Serial.println(
+                same_screen
+                ? "V/C RANGE (RELOAD)"
+                : "V/C RANGE"
             );
 
             break;
@@ -357,6 +312,15 @@ void screen_manager_reload(void)
 
             Serial.println(
                 "BUZZER"
+            );
+
+            break;
+
+
+        case SCREEN_ID_V_C_RANGE:
+
+            Serial.println(
+                "V/C RANGE"
             );
 
             break;

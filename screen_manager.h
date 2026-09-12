@@ -1,18 +1,25 @@
 #ifndef SCREEN_MANAGER_H
 #define SCREEN_MANAGER_H
 
-#include "ui/screens.h"
+#include <stdbool.h>
 
 #ifdef __cplusplus
+
 extern "C" {
+
 #endif
+
+
+#include "ui/screens.h"
 
 
 // ==================================================
 // INITIALIZE
 // ==================================================
 
-void screen_manager_init(void);
+void screen_manager_init(
+    void
+);
 
 
 // ==================================================
@@ -25,17 +32,21 @@ void screen_manager_show(
 
 
 // ==================================================
-// FORCE RELOAD CURRENT SCREEN
+// RELOAD CURRENT SCREEN
 // ==================================================
 
-void screen_manager_reload(void);
+void screen_manager_reload(
+    void
+);
 
 
 // ==================================================
 // GET CURRENT SCREEN
 // ==================================================
 
-enum ScreensEnum screen_manager_get(void);
+enum ScreensEnum screen_manager_get(
+    void
+);
 
 
 // ==================================================
@@ -48,7 +59,9 @@ bool screen_manager_is(
 
 
 #ifdef __cplusplus
+
 }
+
 #endif
 
 #endif
