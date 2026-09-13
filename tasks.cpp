@@ -1,4 +1,3 @@
-
 #include <Arduino.h>
 #include <lvgl.h>
 
@@ -239,8 +238,44 @@ static bool gui_last_connection_lost =
 static bool gui_last_system_ok =
     false;
 
-static int gui_last_error =
-    -1;
+static ErrorType gui_last_error =
+    ERROR_NONE;
+
+// ==================================================
+// V/C GUI CACHE
+// ==================================================
+
+static float gui_last_voltage_min =
+    -1000.0f;
+
+static float gui_last_voltage_max =
+    -1000.0f;
+
+static float gui_last_current_min =
+    -1000.0f;
+
+static float gui_last_current_max =
+    -1000.0f;
+
+// ==================================================
+// INTERNAL ERROR MESSAGE LABEL
+// ==================================================
+//
+// This label is created INSIDE the real EEZ-generated
+// LV_MSGBOX content object.
+//
+// We are NOT creating a manual error box.
+// ==================================================
+
+static lv_obj_t *error_msg_label =
+    NULL;
+
+// ==================================================
+// ERROR BOX COLOR CACHE
+// ==================================================
+
+static uint32_t error_box_last_color =
+    0xFFFFFFFFUL;
 
 // ==================================================
 // FORWARD DECLARATIONS
@@ -248,11 +283,16 @@ static int gui_last_error =
 
 static void update_led_state(void);
 static void update_error_box(void);
+static void update_vc_range_gui(void);
+
 static ErrorType get_error_type(void);
 static bool main_screen_active(void);
+static bool vc_range_screen_active(void);
+
+static void init_error_msgbox(void);
 
 // ==================================================
-// CHECK ACTIVE SCREEN
+// CHECK MAIN SCREEN
 // ==================================================
 
 static bool main_screen_active(void)
@@ -266,6 +306,151 @@ static bool main_screen_active(void)
 }
 
 // ==================================================
+// CHECK V/C RANGE SCREEN
+// ==================================================
+
+static bool vc_range_screen_active(void)
+{
+    return screen_manager_get() ==
+           SCREEN_ID_V_C_RANGE_SETTINGS;
+}
+
+// ==================================================
+// INIT ERROR MSGBOX
+// ==================================================
+
+static void init_error_msgbox(void)
+{
+    // --------------------------------------------------
+    // Reset pointer
+    // --------------------------------------------------
+
+    error_msg_label =
+        NULL;
+
+    // --------------------------------------------------
+    // Check real EEZ MsgBox
+    // --------------------------------------------------
+
+    if (objects.error_box == NULL)
+    {
+        Serial.println(
+            "ERROR MSGBOX INIT: NULL"
+        );
+
+        return;
+    }
+
+    // --------------------------------------------------
+    // Get MsgBox content area
+    //
+    // This is a child object of the real LV_MSGBOX.
+    // --------------------------------------------------
+
+    lv_obj_t *content =
+        lv_msgbox_get_content(
+            objects.error_box
+        );
+
+    if (content == NULL)
+    {
+        Serial.println(
+            "ERROR MSGBOX INIT: CONTENT NULL"
+        );
+
+        return;
+    }
+
+    // --------------------------------------------------
+    // Create text label INSIDE MsgBox content
+    // --------------------------------------------------
+
+    error_msg_label =
+        lv_label_create(
+            content
+        );
+
+    if (error_msg_label == NULL)
+    {
+        Serial.println(
+            "ERROR MSGBOX INIT: LABEL NULL"
+        );
+
+        return;
+    }
+
+    // --------------------------------------------------
+    // Initial text
+    // --------------------------------------------------
+
+    lv_label_set_text(
+        error_msg_label,
+        ""
+    );
+
+    // --------------------------------------------------
+    // Long text mode
+    // --------------------------------------------------
+
+    lv_label_set_long_mode(
+        error_msg_label,
+        LV_LABEL_LONG_WRAP
+    );
+
+    // --------------------------------------------------
+    // Width
+    // --------------------------------------------------
+
+    lv_obj_set_width(
+        error_msg_label,
+        LV_PCT(100)
+    );
+
+    // --------------------------------------------------
+    // Center alignment
+    // --------------------------------------------------
+
+    lv_obj_set_style_text_align(
+        error_msg_label,
+        LV_TEXT_ALIGN_CENTER,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    // --------------------------------------------------
+    // White text
+    // --------------------------------------------------
+
+    lv_obj_set_style_text_color(
+        error_msg_label,
+        lv_color_hex(0xFFFFFF),
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    // --------------------------------------------------
+    // Make text visible
+    // --------------------------------------------------
+
+    lv_obj_clear_flag(
+        error_msg_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+    // --------------------------------------------------
+    // Debug
+    // --------------------------------------------------
+
+    Serial.println(
+        "ERROR MSGBOX CONTENT = FOUND"
+    );
+
+    Serial.println(
+        "ERROR MSGBOX TEXT LABEL = CREATED"
+    );
+}
+
+// ==================================================
 // BUZZER SET MODE
 // ==================================================
 
@@ -273,13 +458,20 @@ void buzzer_set_mode(uint8_t mode)
 {
     if (mode > BUZZER_MODE_3)
     {
-        mode = BUZZER_MODE_3;
+        mode =
+            BUZZER_MODE_3;
     }
 
-    buzzer_mode = mode;
+    buzzer_mode =
+        mode;
 
-    Serial.print("BUZZER MODE = ");
-    Serial.println(buzzer_mode + 1);
+    Serial.print(
+        "BUZZER MODE = "
+    );
+
+    Serial.println(
+        buzzer_mode + 1
+    );
 }
 
 // ==================================================
@@ -299,23 +491,36 @@ void set_voltage_min_limit(float value)
 {
     if (value < VOLTAGE_LIMIT_MIN)
     {
-        value = VOLTAGE_LIMIT_MIN;
+        value =
+            VOLTAGE_LIMIT_MIN;
     }
 
     if (value > VOLTAGE_LIMIT_MAX)
     {
-        value = VOLTAGE_LIMIT_MAX;
+        value =
+            VOLTAGE_LIMIT_MAX;
     }
 
-    voltage_min_limit = value;
+    voltage_min_limit =
+        value;
 
-    if (voltage_min_limit > voltage_max_limit)
+    if (
+        voltage_min_limit >
+        voltage_max_limit
+    )
     {
-        voltage_max_limit = voltage_min_limit;
+        voltage_max_limit =
+            voltage_min_limit;
     }
 
-    Serial.print("VOLTAGE MIN LIMIT = ");
-    Serial.println(voltage_min_limit, 1);
+    Serial.print(
+        "VOLTAGE MIN LIMIT = "
+    );
+
+    Serial.println(
+        voltage_min_limit,
+        1
+    );
 }
 
 // ==================================================
@@ -326,23 +531,36 @@ void set_voltage_max_limit(float value)
 {
     if (value < VOLTAGE_LIMIT_MIN)
     {
-        value = VOLTAGE_LIMIT_MIN;
+        value =
+            VOLTAGE_LIMIT_MIN;
     }
 
     if (value > VOLTAGE_LIMIT_MAX)
     {
-        value = VOLTAGE_LIMIT_MAX;
+        value =
+            VOLTAGE_LIMIT_MAX;
     }
 
-    voltage_max_limit = value;
+    voltage_max_limit =
+        value;
 
-    if (voltage_max_limit < voltage_min_limit)
+    if (
+        voltage_max_limit <
+        voltage_min_limit
+    )
     {
-        voltage_min_limit = voltage_max_limit;
+        voltage_min_limit =
+            voltage_max_limit;
     }
 
-    Serial.print("VOLTAGE MAX LIMIT = ");
-    Serial.println(voltage_max_limit, 1);
+    Serial.print(
+        "VOLTAGE MAX LIMIT = "
+    );
+
+    Serial.println(
+        voltage_max_limit,
+        1
+    );
 }
 
 // ==================================================
@@ -371,23 +589,36 @@ void set_current_min_limit(float value)
 {
     if (value < CURRENT_LIMIT_MIN)
     {
-        value = CURRENT_LIMIT_MIN;
+        value =
+            CURRENT_LIMIT_MIN;
     }
 
     if (value > CURRENT_LIMIT_MAX)
     {
-        value = CURRENT_LIMIT_MAX;
+        value =
+            CURRENT_LIMIT_MAX;
     }
 
-    current_min_limit = value;
+    current_min_limit =
+        value;
 
-    if (current_min_limit > current_max_limit)
+    if (
+        current_min_limit >
+        current_max_limit
+    )
     {
-        current_max_limit = current_min_limit;
+        current_max_limit =
+            current_min_limit;
     }
 
-    Serial.print("CURRENT MIN LIMIT = ");
-    Serial.println(current_min_limit, 1);
+    Serial.print(
+        "CURRENT MIN LIMIT = "
+    );
+
+    Serial.println(
+        current_min_limit,
+        1
+    );
 }
 
 // ==================================================
@@ -398,23 +629,36 @@ void set_current_max_limit(float value)
 {
     if (value < CURRENT_LIMIT_MIN)
     {
-        value = CURRENT_LIMIT_MIN;
+        value =
+            CURRENT_LIMIT_MIN;
     }
 
     if (value > CURRENT_LIMIT_MAX)
     {
-        value = CURRENT_LIMIT_MAX;
+        value =
+            CURRENT_LIMIT_MAX;
     }
 
-    current_max_limit = value;
+    current_max_limit =
+        value;
 
-    if (current_max_limit < current_min_limit)
+    if (
+        current_max_limit <
+        current_min_limit
+    )
     {
-        current_min_limit = current_max_limit;
+        current_min_limit =
+            current_max_limit;
     }
 
-    Serial.print("CURRENT MAX LIMIT = ");
-    Serial.println(current_max_limit, 1);
+    Serial.print(
+        "CURRENT MAX LIMIT = "
+    );
+
+    Serial.println(
+        current_max_limit,
+        1
+    );
 }
 
 // ==================================================
@@ -433,6 +677,130 @@ float get_current_min_limit(void)
 float get_current_max_limit(void)
 {
     return current_max_limit;
+}
+
+// ==================================================
+// UPDATE V/C RANGE GUI
+// ==================================================
+
+static void update_vc_range_gui(void)
+{
+    if (!vc_range_screen_active())
+    {
+        return;
+    }
+
+    // ==================================================
+    // VOLTAGE MIN
+    // ==================================================
+
+    if (
+        objects.voltage_min_value != NULL &&
+        voltage_min_limit !=
+        gui_last_voltage_min
+    )
+    {
+        char text[16];
+
+        snprintf(
+            text,
+            sizeof(text),
+            "%.1f",
+            voltage_min_limit
+        );
+
+        lv_label_set_text(
+            objects.voltage_min_value,
+            text
+        );
+
+        gui_last_voltage_min =
+            voltage_min_limit;
+    }
+
+    // ==================================================
+    // VOLTAGE MAX
+    // ==================================================
+
+    if (
+        objects.voltage_max_value != NULL &&
+        voltage_max_limit !=
+        gui_last_voltage_max
+    )
+    {
+        char text[16];
+
+        snprintf(
+            text,
+            sizeof(text),
+            "%.1f",
+            voltage_max_limit
+        );
+
+        lv_label_set_text(
+            objects.voltage_max_value,
+            text
+        );
+
+        gui_last_voltage_max =
+            voltage_max_limit;
+    }
+
+    // ==================================================
+    // CURRENT MIN
+    // ==================================================
+
+    if (
+        objects.current_min_value != NULL &&
+        current_min_limit !=
+        gui_last_current_min
+    )
+    {
+        char text[16];
+
+        snprintf(
+            text,
+            sizeof(text),
+            "%.1f",
+            current_min_limit
+        );
+
+        lv_label_set_text(
+            objects.current_min_value,
+            text
+        );
+
+        gui_last_current_min =
+            current_min_limit;
+    }
+
+    // ==================================================
+    // CURRENT MAX
+    // ==================================================
+
+    if (
+        objects.current_max_value != NULL &&
+        current_max_limit !=
+        gui_last_current_max
+    )
+    {
+        char text[16];
+
+        snprintf(
+            text,
+            sizeof(text),
+            "%.1f",
+            current_max_limit
+        );
+
+        lv_label_set_text(
+            objects.current_max_value,
+            text
+        );
+
+        gui_last_current_max =
+            current_max_limit;
+    }
 }
 
 // ==================================================
@@ -468,12 +836,21 @@ static void led_apply_color(uint32_t color)
 
 static void set_status_led(uint32_t color)
 {
-    led_blink_color = color;
-    led_blink_enable = false;
-    led_blink_state = true;
-    led_blink_timer = millis();
+    led_blink_color =
+        color;
 
-    led_apply_color(color);
+    led_blink_enable =
+        false;
+
+    led_blink_state =
+        true;
+
+    led_blink_timer =
+        millis();
+
+    led_apply_color(
+        color
+    );
 }
 
 // ==================================================
@@ -490,12 +867,21 @@ static void set_status_led_blink(uint32_t color)
         return;
     }
 
-    led_blink_color = color;
-    led_blink_enable = true;
-    led_blink_state = true;
-    led_blink_timer = millis();
+    led_blink_color =
+        color;
 
-    led_apply_color(color);
+    led_blink_enable =
+        true;
+
+    led_blink_state =
+        true;
+
+    led_blink_timer =
+        millis();
+
+    led_apply_color(
+        color
+    );
 }
 
 // ==================================================
@@ -519,7 +905,8 @@ static void led_task(void)
         return;
     }
 
-    uint32_t now = millis();
+    uint32_t now =
+        millis();
 
     if (
         now - led_blink_timer <
@@ -529,8 +916,11 @@ static void led_task(void)
         return;
     }
 
-    led_blink_timer = now;
-    led_blink_state = !led_blink_state;
+    led_blink_timer =
+        now;
+
+    led_blink_state =
+        !led_blink_state;
 
     if (led_blink_state)
     {
@@ -602,27 +992,41 @@ static void apply_settings_highlight(void)
 {
     clear_settings_highlight();
 
-    lv_obj_t *selected = NULL;
+    lv_obj_t *selected =
+        NULL;
 
     switch (settings_selection)
     {
         case SETTINGS_OPTION_BUZZER:
-            selected = objects.buzzer;
+
+            selected =
+                objects.buzzer;
+
             break;
 
         case SETTINGS_OPTION_CALIBRATION:
-            selected = objects.touch_calibration;
+
+            selected =
+                objects.touch_calibration;
+
             break;
 
         case SETTINGS_OPTION_VC_RANGE:
-            selected = objects.voltage_range;
+
+            selected =
+                objects.voltage_range;
+
             break;
 
         case SETTINGS_OPTION_BACK:
-            selected = objects.exit_settings;
+
+            selected =
+                objects.exit_settings;
+
             break;
 
         default:
+
             break;
     }
 
@@ -666,8 +1070,11 @@ static void buttons_task(void)
             BUTTON_DEBOUNCE_MS
         )
         {
-            right_last_change = now;
-            right_last_state = right_state;
+            right_last_change =
+                now;
+
+            right_last_state =
+                right_state;
 
             if (right_state == LOW)
             {
@@ -740,8 +1147,11 @@ static void buttons_task(void)
             BUTTON_DEBOUNCE_MS
         )
         {
-            select_last_change = now;
-            select_last_state = select_state;
+            select_last_change =
+                now;
+
+            select_last_state =
+                select_state;
 
             if (select_state == LOW)
             {
@@ -834,6 +1244,7 @@ static void buttons_task(void)
                             break;
 
                         default:
+
                             break;
                     }
                 }
@@ -882,8 +1293,11 @@ static void uart_task(void)
 {
     uart_receive();
 
-    float new_voltage = 0.0f;
-    float new_current = 0.0f;
+    float new_voltage =
+        0.0f;
+
+    float new_current =
+        0.0f;
 
     if (
         uart_get_values(
@@ -1027,20 +1441,30 @@ static void buzzer_task(void)
         system_state.connection_lost
     )
     {
-        noTone(BUZZER_PIN);
+        noTone(
+            BUZZER_PIN
+        );
 
-        buzzer_output_state = false;
-        buzzer_phase = 0;
+        buzzer_output_state =
+            false;
+
+        buzzer_phase =
+            0;
 
         return;
     }
 
     if (!system_state.low_voltage)
     {
-        noTone(BUZZER_PIN);
+        noTone(
+            BUZZER_PIN
+        );
 
-        buzzer_output_state = false;
-        buzzer_phase = 0;
+        buzzer_output_state =
+            false;
+
+        buzzer_phase =
+            0;
 
         return;
     }
@@ -1066,11 +1490,13 @@ static void buzzer_task(void)
         BUZZER_MODE_2
     )
     {
-        interval = 100;
+        interval =
+            100;
     }
     else
     {
-        interval = 500;
+        interval =
+            500;
     }
 
     if (
@@ -1081,7 +1507,8 @@ static void buzzer_task(void)
         return;
     }
 
-    buzzer_timer = now;
+    buzzer_timer =
+        now;
 
     buzzer_output_state =
         !buzzer_output_state;
@@ -1111,7 +1538,8 @@ static void buzzer_task(void)
                 2
             )
             {
-                buzzer_phase = 0;
+                buzzer_phase =
+                    0;
             }
         }
     }
@@ -1123,10 +1551,6 @@ static void buzzer_task(void)
 
 static ErrorType get_error_type(void)
 {
-    // =================================================
-    // CONNECTION HAS HIGHEST PRIORITY
-    // =================================================
-
     if (
         system_state.connection_lost ||
         system_state.uart_timeout
@@ -1134,10 +1558,6 @@ static ErrorType get_error_type(void)
     {
         return ERROR_CONNECTION;
     }
-
-    // =================================================
-    // VOLTAGE
-    // =================================================
 
     if (
         system_state.voltage <
@@ -1154,10 +1574,6 @@ static ErrorType get_error_type(void)
     {
         return ERROR_VOLTAGE_HIGH;
     }
-
-    // =================================================
-    // CURRENT
-    // =================================================
 
     if (
         system_state.current <
@@ -1184,16 +1600,17 @@ static ErrorType get_error_type(void)
 
 static void update_error_box(void)
 {
-    // Error widgets belong to MAIN.
     if (!main_screen_active())
     {
         return;
     }
 
-    if (
-        objects.error_box == NULL ||
-        objects.error_label == NULL
-    )
+    if (objects.error_box == NULL)
+    {
+        return;
+    }
+
+    if (error_msg_label == NULL)
     {
         return;
     }
@@ -1201,9 +1618,9 @@ static void update_error_box(void)
     ErrorType error =
         get_error_type();
 
-    // =================================================
+    // ==================================================
     // NO ERROR
-    // =================================================
+    // ==================================================
 
     if (
         error ==
@@ -1215,141 +1632,216 @@ static void update_error_box(void)
             ERROR_NONE
         )
         {
-            lv_label_set_text(
-                objects.error_label,
-                ""
-            );
-
-            lv_obj_add_flag(
-                objects.error_label,
-                LV_OBJ_FLAG_HIDDEN
+            Serial.println(
+                "ERROR MSGBOX: HIDE"
             );
 
             lv_obj_add_flag(
                 objects.error_box,
                 LV_OBJ_FLAG_HIDDEN
             );
-        }
 
-        gui_last_error =
-            ERROR_NONE;
+            lv_label_set_text(
+                error_msg_label,
+                ""
+            );
+
+            gui_last_error =
+                ERROR_NONE;
+        }
 
         return;
     }
 
-    // =================================================
+    // ==================================================
     // SAME ERROR
-    // =================================================
+    // ==================================================
 
     if (
-        gui_last_error ==
-        error
+        error ==
+        gui_last_error
     )
     {
         return;
     }
 
-    // =================================================
-    // MESSAGE
-    // =================================================
+    // ==================================================
+    // ERROR MESSAGE
+    // ==================================================
 
     const char *message =
         "";
 
-    if (
-        error ==
-        ERROR_CONNECTION
-    )
+    uint32_t color =
+        LED_RED;
+
+    switch (error)
     {
-        message =
-            "CONNECTION LOST";
-    }
-    else if (
-        error ==
-        ERROR_VOLTAGE_LOW
-    )
-    {
-        message =
-            "VOLTAGE TOO LOW";
-    }
-    else if (
-        error ==
-        ERROR_VOLTAGE_HIGH
-    )
-    {
-        message =
-            "VOLTAGE TOO HIGH";
-    }
-    else if (
-        error ==
-        ERROR_CURRENT_LOW
-    )
-    {
-        message =
-            "CURRENT TOO LOW";
-    }
-    else if (
-        error ==
-        ERROR_CURRENT_HIGH
-    )
-    {
-        message =
-            "CURRENT TOO HIGH";
+        case ERROR_CONNECTION:
+
+            message =
+                "CONNECTION LOST";
+
+            color =
+                LED_ORANGE;
+
+            break;
+
+        case ERROR_VOLTAGE_LOW:
+
+            message =
+                "VOLTAGE TOO LOW";
+
+            color =
+                LED_RED;
+
+            break;
+
+        case ERROR_VOLTAGE_HIGH:
+
+            message =
+                "VOLTAGE TOO HIGH";
+
+            color =
+                LED_RED;
+
+            break;
+
+        case ERROR_CURRENT_LOW:
+
+            message =
+                "CURRENT TOO LOW";
+
+            color =
+                LED_RED;
+
+            break;
+
+        case ERROR_CURRENT_HIGH:
+
+            message =
+                "CURRENT TOO HIGH";
+
+            color =
+                LED_RED;
+
+            break;
+
+        default:
+
+            message =
+                "";
+
+            break;
     }
 
-    // =================================================
-    // COLOR
-    // =================================================
+    // ==================================================
+    // LOG
+    // ==================================================
 
-    uint32_t box_color;
+    Serial.print(
+        "ERROR MSGBOX UPDATE: "
+    );
 
-    if (
-        error ==
-        ERROR_CONNECTION
-    )
-    {
-        box_color =
-            LED_ORANGE;
-    }
-    else
-    {
-        box_color =
-            LED_RED;
-    }
+    Serial.println(
+        message
+    );
 
-    // =================================================
-    // SET COLOR
-    // =================================================
+    // ==================================================
+    // UPDATE INTERNAL LABEL
+    // ==================================================
 
-    lv_obj_set_style_bg_color(
-        objects.error_box,
-        lv_color_hex(box_color),
+    lv_label_set_text(
+        error_msg_label,
+        message
+    );
+
+    // ==================================================
+    // ERROR TEXT COLOR
+    // ==================================================
+
+    lv_obj_set_style_text_color(
+        error_msg_label,
+        lv_color_hex(0xFFFFFF),
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
 
-    // =================================================
-    // SET TEXT
-    // =================================================
+    // ==================================================
+    // CENTER TEXT
+    // ==================================================
 
-    lv_label_set_text(
-        objects.error_label,
-        message
+    lv_obj_set_style_text_align(
+        error_msg_label,
+        LV_TEXT_ALIGN_CENTER,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
     );
 
-    // =================================================
-    // SHOW
-    // =================================================
+    // ==================================================
+    // ERROR BOX COLOR
+    //
+    // The actual box is the EEZ-generated LV_MSGBOX.
+    // ==================================================
 
-    lv_obj_clear_flag(
-        objects.error_label,
-        LV_OBJ_FLAG_HIDDEN
-    );
+    if (
+        error_box_last_color !=
+        color
+    )
+    {
+        lv_obj_set_style_bg_color(
+            objects.error_box,
+            lv_color_hex(color),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_bg_opa(
+            objects.error_box,
+            LV_OPA_COVER,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        error_box_last_color =
+            color;
+    }
+
+    // ==================================================
+    // SHOW MSGBOX
+    // ==================================================
 
     lv_obj_clear_flag(
         objects.error_box,
         LV_OBJ_FLAG_HIDDEN
     );
+
+    // ==================================================
+    // MAKE INTERNAL LABEL VISIBLE
+    // ==================================================
+
+    lv_obj_clear_flag(
+        error_msg_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
+
+    // ==================================================
+    // SEPARATE EEZ LABEL MUST STAY HIDDEN
+    // ==================================================
+
+    if (
+        objects.error_label != NULL
+    )
+    {
+        lv_obj_add_flag(
+            objects.error_label,
+            LV_OBJ_FLAG_HIDDEN
+        );
+    }
+
+    // ==================================================
+    // SAVE ERROR
+    // ==================================================
 
     gui_last_error =
         error;
@@ -1361,85 +1853,80 @@ static void update_error_box(void)
 
 static void gui_update(void)
 {
-    if (!main_screen_active())
+    // ==================================================
+    // MAIN SCREEN
+    // ==================================================
+
+    if (main_screen_active())
     {
-        return;
+        // ==================================================
+        // VOLTAGE
+        // ==================================================
+
+        if (
+            objects.voltage != NULL &&
+            system_state.voltage !=
+            gui_last_voltage
+        )
+        {
+            char voltage_text[16];
+
+            snprintf(
+                voltage_text,
+                sizeof(voltage_text),
+                "%.2f",
+                system_state.voltage
+            );
+
+            lv_label_set_text(
+                objects.voltage,
+                voltage_text
+            );
+
+            gui_last_voltage =
+                system_state.voltage;
+        }
+
+        // ==================================================
+        // CURRENT
+        // ==================================================
+
+        if (
+            objects.current != NULL &&
+            system_state.current !=
+            gui_last_current
+        )
+        {
+            char current_text[16];
+
+            snprintf(
+                current_text,
+                sizeof(current_text),
+                "%.2f",
+                system_state.current
+            );
+
+            lv_label_set_text(
+                objects.current,
+                current_text
+            );
+
+            gui_last_current =
+                system_state.current;
+        }
+
+        // ==================================================
+        // ERROR MSGBOX
+        // ==================================================
+
+        update_error_box();
     }
 
-    // =================================================
-    // VOLTAGE
-    // =================================================
+    // ==================================================
+    // V/C RANGE
+    // ==================================================
 
-    if (
-        objects.voltage != NULL &&
-        system_state.voltage !=
-        gui_last_voltage
-    )
-    {
-        char text[24];
-
-        snprintf(
-            text,
-            sizeof(text),
-            "%.2f",
-            system_state.voltage
-        );
-
-        lv_label_set_text(
-            objects.voltage,
-            text
-        );
-
-        gui_last_voltage =
-            system_state.voltage;
-    }
-
-    // =================================================
-    // CURRENT
-    // =================================================
-
-    if (
-        objects.current != NULL &&
-        system_state.current !=
-        gui_last_current
-    )
-    {
-        char text[24];
-
-        snprintf(
-            text,
-            sizeof(text),
-            "%.2f",
-            system_state.current
-        );
-
-        lv_label_set_text(
-            objects.current,
-            text
-        );
-
-        gui_last_current =
-            system_state.current;
-    }
-
-    // =================================================
-    // ERROR
-    // =================================================
-
-    update_error_box();
-
-    // =================================================
-    // CACHE
-    // =================================================
-
-    gui_last_low_voltage =
-        system_state.low_voltage;
-
-    gui_last_connection_lost =
-        system_state.connection_lost;
-
-    gui_last_system_ok =
-        system_state.system_ok;
+    update_vc_range_gui();
 }
 
 // ==================================================
@@ -1454,6 +1941,10 @@ static void gui_task(void)
     uint32_t now =
         millis();
 
+    // ==================================================
+    // GUI PERIOD = 20 ms
+    // ==================================================
+
     if (
         now - last_gui_update <
         20
@@ -1465,11 +1956,44 @@ static void gui_task(void)
     last_gui_update =
         now;
 
+    // ==================================================
+    // CUSTOM GUI
+    // ==================================================
+
     gui_update();
+
+    // ==================================================
+    // LED
+    // ==================================================
 
     update_led_state();
 
-    ui_tick();
+    // ==================================================
+    // EEZ GENERATED TICK
+    //
+    // Use current screen from screen_manager.
+    // Do NOT use ui_tick(), because ui.cpp has its own
+    // private currentScreen.
+    //
+    // V/C Range is handled directly by tasks.cpp.
+    // ==================================================
+
+    if (!vc_range_screen_active())
+    {
+        int16_t screen_index =
+            (int16_t)screen_manager_get() -
+            1;
+
+        if (
+            screen_index >= 0 &&
+            screen_index < 4
+        )
+        {
+            tick_screen(
+                screen_index
+            );
+        }
+    }
 }
 
 // ==================================================
@@ -1497,9 +2021,9 @@ static void update_led_state(void)
     led_last_state =
         error;
 
-    // =================================================
+    // ==================================================
     // CONNECTION LOST
-    // =================================================
+    // ==================================================
 
     if (
         error ==
@@ -1513,9 +2037,9 @@ static void update_led_state(void)
         return;
     }
 
-    // =================================================
+    // ==================================================
     // NO DATA
-    // =================================================
+    // ==================================================
 
     if (
         !system_state.data_received
@@ -1528,9 +2052,9 @@ static void update_led_state(void)
         return;
     }
 
-    // =================================================
+    // ==================================================
     // OK
-    // =================================================
+    // ==================================================
 
     if (
         error ==
@@ -1544,9 +2068,9 @@ static void update_led_state(void)
         return;
     }
 
-    // =================================================
-    // OTHER FAULT
-    // =================================================
+    // ==================================================
+    // ERROR
+    // ==================================================
 
     set_status_led_blink(
         LED_RED
@@ -1559,6 +2083,10 @@ static void update_led_state(void)
 
 void tasks_init(void)
 {
+    // ==================================================
+    // BUTTONS
+    // ==================================================
+
     pinMode(
         BTN_RIGHT,
         INPUT_PULLUP
@@ -1569,6 +2097,10 @@ void tasks_init(void)
         INPUT_PULLUP
     );
 
+    // ==================================================
+    // BUZZER
+    // ==================================================
+
     pinMode(
         BUZZER_PIN,
         OUTPUT
@@ -1578,11 +2110,19 @@ void tasks_init(void)
         BUZZER_PIN
     );
 
+    // ==================================================
+    // INITIAL BUTTON STATE
+    // ==================================================
+
     right_last_state =
-        digitalRead(BTN_RIGHT);
+        digitalRead(
+            BTN_RIGHT
+        );
 
     select_last_state =
-        digitalRead(BTN_SELECT);
+        digitalRead(
+            BTN_SELECT
+        );
 
     right_last_change =
         millis();
@@ -1590,15 +2130,19 @@ void tasks_init(void)
     select_last_change =
         millis();
 
+    // ==================================================
+    // TIMERS
+    // ==================================================
+
     buzzer_timer =
         millis();
 
     led_blink_timer =
         millis();
 
-    // =================================================
+    // ==================================================
     // LED
-    // =================================================
+    // ==================================================
 
     if (
         objects.obj0 != NULL
@@ -1606,7 +2150,9 @@ void tasks_init(void)
     {
         lv_led_set_color(
             objects.obj0,
-            lv_color_hex(LED_BLUE)
+            lv_color_hex(
+                LED_BLUE
+            )
         );
 
         lv_led_set_brightness(
@@ -1625,23 +2171,32 @@ void tasks_init(void)
         );
     }
 
-    // =================================================
-    // ERROR BOX
-    // =================================================
+    // ==================================================
+    // ERROR MSGBOX
+    // ==================================================
 
     if (
         objects.error_box != NULL
     )
     {
+        // ----------------------------------------------
+        // Hide initially
+        // ----------------------------------------------
+
         lv_obj_add_flag(
             objects.error_box,
             LV_OBJ_FLAG_HIDDEN
         );
 
-        // Style is configured ONLY ONCE here.
+        // ----------------------------------------------
+        // Default color = RED
+        // ----------------------------------------------
+
         lv_obj_set_style_bg_color(
             objects.error_box,
-            lv_color_hex(LED_RED),
+            lv_color_hex(
+                LED_RED
+            ),
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
@@ -1652,6 +2207,15 @@ void tasks_init(void)
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
+
+        error_box_last_color =
+            LED_RED;
+
+        // ----------------------------------------------
+        // Create actual text label inside the MsgBox
+        // ----------------------------------------------
+
+        init_error_msgbox();
 
         Serial.println(
             "ERROR BOX = EEZ LV_MSGBOX"
@@ -1664,50 +2228,24 @@ void tasks_init(void)
         );
     }
 
-    // =================================================
-    // ERROR LABEL
-    // =================================================
+    // ==================================================
+    // SEPARATE EEZ ERROR LABEL
+    // ==================================================
+    //
+    // This object is NOT used for error display.
+    // ==================================================
 
     if (
         objects.error_label != NULL
     )
     {
-        lv_label_set_text(
-            objects.error_label,
-            ""
-        );
-
         lv_obj_add_flag(
             objects.error_label,
             LV_OBJ_FLAG_HIDDEN
         );
 
-        lv_obj_set_x(
-            objects.error_label,
-            90
-        );
-
-        lv_obj_set_style_text_color(
-            objects.error_label,
-            lv_color_hex(0xFFFFFF),
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_text_align(
-            objects.error_label,
-            LV_TEXT_ALIGN_LEFT,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_label_set_long_mode(
-            objects.error_label,
-            LV_LABEL_LONG_WRAP
-        );
-
         Serial.println(
-            "ERROR LABEL = EEZ LV_LABEL"
+            "ERROR LABEL = UNUSED"
         );
     }
     else
@@ -1717,15 +2255,31 @@ void tasks_init(void)
         );
     }
 
-    // =================================================
-    // SETTINGS
-    // =================================================
+    // ==================================================
+    // SETTINGS HIGHLIGHT
+    // ==================================================
 
     apply_settings_highlight();
 
-    // =================================================
-    // CACHE
-    // =================================================
+    // ==================================================
+    // V/C CACHE
+    // ==================================================
+
+    gui_last_voltage_min =
+        -1000.0f;
+
+    gui_last_voltage_max =
+        -1000.0f;
+
+    gui_last_current_min =
+        -1000.0f;
+
+    gui_last_current_max =
+        -1000.0f;
+
+    // ==================================================
+    // MAIN CACHE
+    // ==================================================
 
     gui_last_voltage =
         -1000.0f;
@@ -1743,16 +2297,21 @@ void tasks_init(void)
         false;
 
     gui_last_error =
-        -1;
+        ERROR_NONE;
+
+    // ==================================================
+    // LED CACHE
+    // ==================================================
 
     led_last_state =
         ERROR_NONE;
 
-    // =================================================
+    // ==================================================
     // LOG
-    // =================================================
+    // ==================================================
 
     Serial.println();
+
     Serial.println(
         "=============================="
     );
@@ -1798,19 +2357,31 @@ void tasks_init(void)
     );
 
     Serial.println(
-        "ERROR LABEL = EEZ GENERATED LV_LABEL"
+        "ERROR MSG = CHILD OF MSGBOX CONTENT"
     );
 
     Serial.println(
-        "UART TIMEOUT = 3000 ms"
+        "ERROR LABEL = UNUSED"
     );
 
     Serial.println(
-        "DEFAULT V RANGE = 20..25 V"
+        "ERROR CONNECTION = ORANGE"
     );
 
     Serial.println(
-        "DEFAULT C RANGE = 0..1 A"
+        "ERROR VOLTAGE/CURRENT = RED"
+    );
+
+    Serial.println(
+        "V/C RANGE GUI UPDATE = TASKS"
+    );
+
+    Serial.println(
+        "GUI LABEL UPDATE = CHANGE ONLY"
+    );
+
+    Serial.println(
+        "EEZ TICK = DIRECT CURRENT SCREEN"
     );
 
     Serial.println(
@@ -1824,18 +2395,49 @@ void tasks_init(void)
 
 void tasks_run(void)
 {
+    // ==================================================
+    // 1. BUTTONS
+    // ==================================================
+
     buttons_task();
+
+    // ==================================================
+    // 2. UART
+    // ==================================================
 
     uart_task();
 
+    // ==================================================
+    // 3. SAFETY
+    // ==================================================
+
     safety_task();
+
+    // ==================================================
+    // 4. BUZZER
+    // ==================================================
 
     buzzer_task();
 
-    gui_task();
-
-    led_task();
+    // ==================================================
+    // 5. SCREEN MANAGER
+    // ==================================================
+    //
+    // Screen must be applied before GUI accesses
+    // screen-dependent objects.
+    // ==================================================
 
     screen_manager_process();
-}
 
+    // ==================================================
+    // 6. GUI
+    // ==================================================
+
+    gui_task();
+
+    // ==================================================
+    // 7. LED
+    // ==================================================
+
+    led_task();
+}

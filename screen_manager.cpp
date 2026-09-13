@@ -8,6 +8,10 @@ extern "C"
 #include "ui/screens.h"
 }
 
+// ==================================================
+// SCREEN STATE
+// ==================================================
+
 static enum ScreensEnum current_screen =
     SCREEN_ID_MAIN;
 
@@ -75,14 +79,17 @@ static void load_screen_now(
         "SCREEN APPLY START"
     );
 
-    /*
-     * مهم:
-     * بدون animation
-     */
+    // --------------------------------------------------
+    // No animation
+    // --------------------------------------------------
 
     lv_scr_load(
         screen_obj
     );
+
+    // --------------------------------------------------
+    // Update custom screen state
+    // --------------------------------------------------
 
     current_screen =
         screen;

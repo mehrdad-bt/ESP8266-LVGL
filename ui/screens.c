@@ -87,7 +87,7 @@ void create_screen_main() {
             objects.btn_settings = obj;
             lv_obj_set_pos(obj, 233, 167);
             lv_obj_set_size(obj, 82, 50);
-            lv_obj_add_event_cb(obj, action_go_to_settings_page, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_go_to_settings_page, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
@@ -135,7 +135,7 @@ void create_screen_main() {
         }
         {
             // Error Box
-            lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, true);
+            lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, false);
             objects.error_box = obj;
             lv_obj_set_pos(obj, 70, 80);
             lv_obj_set_size(obj, 180, 100);
@@ -170,7 +170,7 @@ void create_screen_settings_page() {
             objects.exit_settings = obj;
             lv_obj_set_pos(obj, 257, 195);
             lv_obj_set_size(obj, 52, 34);
-            lv_obj_add_event_cb(obj, action_exit_to_main_page, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_exit_to_main_page, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
@@ -188,7 +188,7 @@ void create_screen_settings_page() {
             objects.buzzer = obj;
             lv_obj_set_pos(obj, 8, 49);
             lv_obj_set_size(obj, 110, 42);
-            lv_obj_add_event_cb(obj, action_go_to_buzzer_settings, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_go_to_buzzer_settings, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
@@ -206,7 +206,7 @@ void create_screen_settings_page() {
             objects.touch_calibration = obj;
             lv_obj_set_pos(obj, 8, 109);
             lv_obj_set_size(obj, 110, 41);
-            lv_obj_add_event_cb(obj, action_go_to_touch_calibration, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_go_to_touch_calibration, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
@@ -224,7 +224,7 @@ void create_screen_settings_page() {
             objects.voltage_range = obj;
             lv_obj_set_pos(obj, 9, 167);
             lv_obj_set_size(obj, 110, 43);
-            lv_obj_add_event_cb(obj, action_go_to_v_c_range_settings, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_go_to_v_c_range_settings, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
@@ -279,7 +279,7 @@ void create_screen_buzzer_settings() {
             objects.buzzer_settings_page_back_button = obj;
             lv_obj_set_pos(obj, 16, 189);
             lv_obj_set_size(obj, 78, 41);
-            lv_obj_add_event_cb(obj, action_go_from_buzzer_settings_page_to_settings_page, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_go_from_buzzer_settings_page_to_settings_page, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
@@ -408,7 +408,7 @@ void create_screen_v_c_range_settings() {
             lv_obj_t *obj = lv_btn_create(parent_obj);
             lv_obj_set_pos(obj, 254, 196);
             lv_obj_set_size(obj, 57, 34);
-            lv_obj_add_event_cb(obj, action_exit_from_v_c_menu_to_settings, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_add_event_cb(obj, action_exit_from_v_c_menu_to_settings, LV_EVENT_RELEASED, (void *)0);
             {
                 lv_obj_t *parent_obj = obj;
                 {
