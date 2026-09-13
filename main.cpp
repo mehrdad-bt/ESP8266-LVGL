@@ -12,13 +12,11 @@ extern "C"
 #include "tasks.h"
 #include "screen_manager.h"
 
-
 // ==================================================
 // WATCHDOG
 // ==================================================
 
 #define WDT_TIMEOUT_SECONDS 4
-
 
 // ==================================================
 // DISPLAY
@@ -31,9 +29,7 @@ TFT_eSPI tft = TFT_eSPI();
 
 static lv_disp_draw_buf_t draw_buf;
 
-// Reduced buffer for ESP8266 RAM
 static lv_color_t buf1[SCREEN_WIDTH * 5];
-
 
 // ==================================================
 // TOUCH CALIBRATION
@@ -48,9 +44,8 @@ static uint16_t calData[5] =
     7
 };
 
-
 // ==================================================
-// LVGL DISPLAY FLUSH
+// DISPLAY FLUSH
 // ==================================================
 
 static void my_disp_flush(
@@ -70,21 +65,22 @@ static void my_disp_flush(
         area->x1,
         area->y1,
         w,
-        h);
+        h
+    );
 
     tft.pushColors(
         (uint16_t *)&color_p->full,
         w * h,
-        true);
+        true
+    );
 
     tft.endWrite();
 
     lv_disp_flush_ready(disp);
 }
 
-
 // ==================================================
-// TOUCH CALLBACK
+// TOUCH
 // ==================================================
 
 static void my_touchpad_read(
@@ -108,9 +104,8 @@ static void my_touchpad_read(
     }
 }
 
-
 // ==================================================
-// LVGL MEMORY DEBUG
+// LVGL MEMORY
 // ==================================================
 
 static void print_lvgl_memory(const char *point)
@@ -145,7 +140,6 @@ static void print_lvgl_memory(const char *point)
     Serial.println("=================================");
 }
 
-
 // ==================================================
 // SETUP
 // ==================================================
@@ -164,28 +158,27 @@ void setup()
     Serial.print("ESP FREE HEAP AT START = ");
     Serial.println(ESP.getFreeHeap());
 
-
     // ==================================================
     // WATCHDOG
     // ==================================================
 
-    ESP.wdtEnable(WDT_TIMEOUT_SECONDS * 1000);
+    ESP.wdtEnable(
+        WDT_TIMEOUT_SECONDS * 1000
+    );
 
-    Serial.println("Watchdog enabled: 4 seconds");
-
+    Serial.println(
+        "Watchdog enabled: 4 seconds"
+    );
 
     // ==================================================
     // TFT
     // ==================================================
 
     tft.begin();
-
     tft.setRotation(1);
-
     tft.setTouch(calData);
 
     Serial.println("TFT initialized");
-
 
     // ==================================================
     // LVGL
@@ -197,7 +190,6 @@ void setup()
 
     print_lvgl_memory("AFTER LV_INIT");
 
-
     // ==================================================
     // DRAW BUFFER
     // ==================================================
@@ -206,12 +198,16 @@ void setup()
         &draw_buf,
         buf1,
         NULL,
-        SCREEN_WIDTH * 5);
+        SCREEN_WIDTH * 5
+    );
 
-    Serial.println("Draw buffer initialized");
+    Serial.println(
+        "Draw buffer initialized"
+    );
 
-    print_lvgl_memory("AFTER DRAW BUFFER");
-
+    print_lvgl_memory(
+        "AFTER DRAW BUFFER"
+    );
 
     // ==================================================
     // DISPLAY DRIVER
@@ -219,21 +215,33 @@ void setup()
 
     static lv_disp_drv_t disp_drv;
 
-    lv_disp_drv_init(&disp_drv);
+    lv_disp_drv_init(
+        &disp_drv
+    );
 
-    disp_drv.hor_res = SCREEN_WIDTH;
-    disp_drv.ver_res = SCREEN_HEIGHT;
+    disp_drv.hor_res =
+        SCREEN_WIDTH;
 
-    disp_drv.flush_cb = my_disp_flush;
+    disp_drv.ver_res =
+        SCREEN_HEIGHT;
 
-    disp_drv.draw_buf = &draw_buf;
+    disp_drv.flush_cb =
+        my_disp_flush;
 
-    lv_disp_drv_register(&disp_drv);
+    disp_drv.draw_buf =
+        &draw_buf;
 
-    Serial.println("Display driver registered");
+    lv_disp_drv_register(
+        &disp_drv
+    );
 
-    print_lvgl_memory("AFTER DISPLAY DRIVER");
+    Serial.println(
+        "Display driver registered"
+    );
 
+    print_lvgl_memory(
+        "AFTER DISPLAY DRIVER"
+    );
 
     // ==================================================
     // TOUCH DRIVER
@@ -241,18 +249,27 @@ void setup()
 
     static lv_indev_drv_t indev_drv;
 
-    lv_indev_drv_init(&indev_drv);
+    lv_indev_drv_init(
+        &indev_drv
+    );
 
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.type =
+        LV_INDEV_TYPE_POINTER;
 
-    indev_drv.read_cb = my_touchpad_read;
+    indev_drv.read_cb =
+        my_touchpad_read;
 
-    lv_indev_drv_register(&indev_drv);
+    lv_indev_drv_register(
+        &indev_drv
+    );
 
-    Serial.println("Touch driver registered");
+    Serial.println(
+        "Touch driver registered"
+    );
 
-    print_lvgl_memory("AFTER INPUT DRIVER");
-
+    print_lvgl_memory(
+        "AFTER INPUT DRIVER"
+    );
 
     // ==================================================
     // UART
@@ -260,8 +277,9 @@ void setup()
 
     serial_init();
 
-    Serial.println("================================");
-
+    Serial.println(
+        "================================"
+    );
 
     // ==================================================
     // EEZ UI
@@ -269,13 +287,21 @@ void setup()
 
     ui_init();
 
-    Serial.println("EEZ Studio UI initialized");
+    Serial.println(
+        "EEZ Studio UI initialized"
+    );
 
-    print_lvgl_memory("AFTER UI");
+    print_lvgl_memory(
+        "AFTER UI"
+    );
 
-    Serial.print("ESP FREE HEAP AFTER UI = ");
-    Serial.println(ESP.getFreeHeap());
+    Serial.print(
+        "ESP FREE HEAP AFTER UI = "
+    );
 
+    Serial.println(
+        ESP.getFreeHeap()
+    );
 
     // ==================================================
     // SCREEN MANAGER
@@ -283,34 +309,50 @@ void setup()
 
     screen_manager_init();
 
-
     if (objects.obj0 != NULL)
-        Serial.println("LED OBJECT = EEZ LV_LED");
+    {
+        Serial.println(
+            "LED OBJECT = EEZ LV_LED"
+        );
+    }
     else
-        Serial.println("LED OBJECT = NULL");
-
+    {
+        Serial.println(
+            "LED OBJECT = NULL"
+        );
+    }
 
     if (objects.error_box != NULL)
-        Serial.println("ERROR BOX = EEZ LV_MSGBOX");
+    {
+        Serial.println(
+            "ERROR BOX = EEZ LV_MSGBOX"
+        );
+    }
     else
-        Serial.println("ERROR BOX = NULL");
-
+    {
+        Serial.println(
+            "ERROR BOX = NULL"
+        );
+    }
 
     // ==================================================
-    // TASK INITIALIZATION
+    // TASK INIT
     // ==================================================
 
     tasks_init();
 
     Serial.println();
-    Serial.println("==============================");
-    Serial.println("TASK SYSTEM INITIALIZED");
-    Serial.println("==============================");
+    Serial.println(
+        "=============================="
+    );
 
-    Serial.println("Tasks initialized");
+    Serial.println(
+        "Tasks initialized"
+    );
 
-    print_lvgl_memory("AFTER TASKS");
-
+    print_lvgl_memory(
+        "AFTER TASKS"
+    );
 
     // ==================================================
     // OBJECT CHECK
@@ -332,22 +374,34 @@ void setup()
         Serial.println("Low voltage label found");
 
     if (objects.v_c_range_settings != NULL)
-        Serial.println("V/C Range screen found");
-
+        Serial.println(
+            "V/C Range screen found"
+        );
 
     // ==================================================
-    // FINAL MEMORY CHECK
+    // FINAL MEMORY
     // ==================================================
 
-    print_lvgl_memory("BEFORE LOOP");
+    print_lvgl_memory(
+        "BEFORE LOOP"
+    );
 
-    Serial.print("ESP FREE HEAP BEFORE LOOP = ");
-    Serial.println(ESP.getFreeHeap());
+    Serial.print(
+        "ESP FREE HEAP BEFORE LOOP = "
+    );
 
-    Serial.println("--------------------------------");
-    Serial.println("Setup complete");
+    Serial.println(
+        ESP.getFreeHeap()
+    );
+
+    Serial.println(
+        "--------------------------------"
+    );
+
+    Serial.println(
+        "Setup complete"
+    );
 }
-
 
 // ==================================================
 // LOOP
@@ -357,7 +411,11 @@ void loop()
 {
     ESP.wdtFeed();
 
+    // Main application tasks
     tasks_run();
+
+    // LVGL handler must run only once
+    lv_timer_handler();
 
     ESP.wdtFeed();
 
