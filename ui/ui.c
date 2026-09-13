@@ -1,4 +1,3 @@
-
 #include "ui.h"
 #include "screens.h"
 #include "images.h"
@@ -9,78 +8,25 @@
 
 static int16_t currentScreen = -1;
 
+static lv_obj_t *getLvglObjectFromIndex(int32_t index) {
+    if (index == -1) {
+        return 0;
+    }
+    return ((lv_obj_t **)&objects)[index];
+}
 
-// ==================================================
-// LOAD SCREEN
-// ==================================================
-
-void loadScreen(enum ScreensEnum screenId)
-{
+void loadScreen(enum ScreensEnum screenId) {
     currentScreen = screenId - 1;
-
-    lv_obj_t *screen = NULL;
-
-    switch (screenId)
-    {
-        case SCREEN_ID_MAIN:
-            screen = objects.main;
-            break;
-
-        case SCREEN_ID_SETTINGS:
-            screen = objects.settings_page;
-            break;
-
-        case SCREEN_ID_BUZZER:
-            screen = objects.buzzer_settings;
-            break;
-
-        case SCREEN_ID_V_C_RANGE:
-            screen = objects.v_c_range_settings;
-            break;
-
-        default:
-            currentScreen = -1;
-            return;
-    }
-
-    if (screen == NULL)
-    {
-        currentScreen = -1;
-        return;
-    }
-
-    // =================================================
-    // NO SCREEN ANIMATION
-    // =================================================
-
-    lv_scr_load(screen);
+    lv_obj_t *screen = getLvglObjectFromIndex(currentScreen);
+    lv_scr_load_anim(screen, LV_SCR_LOAD_ANIM_FADE_IN, 200, 0, false);
 }
 
-
-// ==================================================
-// UI INIT
-// ==================================================
-
-void ui_init(void)
-{
+void ui_init() {
     create_screens();
-
     loadScreen(SCREEN_ID_MAIN);
+
 }
 
-
-// ==================================================
-// UI TICK
-// ==================================================
-
-void ui_tick(void)
-{
-    if (
-        currentScreen >= 0 &&
-        currentScreen < 4
-    )
-    {
-        tick_screen(currentScreen);
-    }
+void ui_tick() {
+    tick_screen(currentScreen);
 }
-
