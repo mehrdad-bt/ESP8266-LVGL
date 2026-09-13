@@ -1,5 +1,6 @@
 
 #include <string.h>
+#include <stdio.h>
 
 #include "screens.h"
 #include "images.h"
@@ -82,7 +83,9 @@ static void event_handler_v_c_slider(
     }
 
     int32_t value =
-        lv_slider_get_value(slider);
+        lv_slider_get_value(
+            slider
+        );
 
     char text[16];
 
@@ -90,8 +93,15 @@ static void event_handler_v_c_slider(
     // VOLTAGE MINIMUM
     // =================================================
 
-    if (slider == objects.voltage_minimum)
+    if (
+        slider ==
+        objects.voltage_minimum
+    )
     {
+        set_voltage_min_limit(
+            (float)value
+        );
+
         snprintf(
             text,
             sizeof(text),
@@ -99,7 +109,10 @@ static void event_handler_v_c_slider(
             (long)value
         );
 
-        if (objects.voltage_min_value != NULL)
+        if (
+            objects.voltage_min_value !=
+            NULL
+        )
         {
             lv_label_set_text(
                 objects.voltage_min_value,
@@ -112,8 +125,15 @@ static void event_handler_v_c_slider(
     // VOLTAGE MAXIMUM
     // =================================================
 
-    else if (slider == objects.voltage_maximum)
+    else if (
+        slider ==
+        objects.voltage_maximum
+    )
     {
+        set_voltage_max_limit(
+            (float)value
+        );
+
         snprintf(
             text,
             sizeof(text),
@@ -121,7 +141,10 @@ static void event_handler_v_c_slider(
             (long)value
         );
 
-        if (objects.voltage_max_value != NULL)
+        if (
+            objects.voltage_max_value !=
+            NULL
+        )
         {
             lv_label_set_text(
                 objects.voltage_max_value,
@@ -134,8 +157,15 @@ static void event_handler_v_c_slider(
     // CURRENT MINIMUM
     // =================================================
 
-    else if (slider == objects.current_minimum)
+    else if (
+        slider ==
+        objects.current_minimum
+    )
     {
+        set_current_min_limit(
+            (float)value
+        );
+
         snprintf(
             text,
             sizeof(text),
@@ -143,7 +173,10 @@ static void event_handler_v_c_slider(
             (long)value
         );
 
-        if (objects.current_min_value != NULL)
+        if (
+            objects.current_min_value !=
+            NULL
+        )
         {
             lv_label_set_text(
                 objects.current_min_value,
@@ -156,8 +189,15 @@ static void event_handler_v_c_slider(
     // CURRENT MAXIMUM
     // =================================================
 
-    else if (slider == objects.current_maximum)
+    else if (
+        slider ==
+        objects.current_maximum
+    )
     {
+        set_current_max_limit(
+            (float)value
+        );
+
         snprintf(
             text,
             sizeof(text),
@@ -165,7 +205,10 @@ static void event_handler_v_c_slider(
             (long)value
         );
 
-        if (objects.current_max_value != NULL)
+        if (
+            objects.current_max_value !=
+            NULL
+        )
         {
             lv_label_set_text(
                 objects.current_max_value,
@@ -284,7 +327,8 @@ void create_screen_main(void)
         lv_obj_set_style_align(
             label,
             LV_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_text_static(
@@ -325,16 +369,6 @@ void create_screen_main(void)
     // =================================================
     // STATUS OBJECT
     // =================================================
-    //
-    // IMPORTANT:
-    // این آبجکت قبلاً lv_led بود و باعث crash در
-    // مسیر lv_led_event / lv_draw_mask_radius می‌شد.
-    //
-    // حالا یک lv_obj ساده است.
-    // فعلاً radius = 0 تا هیچ rounded mask استفاده نشود.
-    // در tasks.cpp همچنان objects.obj0 معتبر است.
-    //
-    // =================================================
 
     {
         lv_obj_t *obj =
@@ -355,31 +389,32 @@ void create_screen_main(void)
             32
         );
 
-        // بدون گوشه‌گردی
         lv_obj_set_style_radius(
             obj,
             0,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
-        // حذف border
         lv_obj_set_style_border_width(
             obj,
             0,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
-        // رنگ اولیه فقط برای تست
         lv_obj_set_style_bg_color(
             obj,
             lv_color_hex(0x0000FF),
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_obj_set_style_bg_opa(
             obj,
             LV_OPA_COVER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
     }
 
@@ -464,16 +499,15 @@ void create_screen_main(void)
     // =================================================
     // ERROR BOX
     // =================================================
+    //
+    // lv_msgbox حذف شده است.
+    // یک lv_obj ساده + یک label مستقل داریم.
+    //
+    // =================================================
 
     {
         lv_obj_t *obj =
-            lv_msgbox_create(
-                parent_obj,
-                "",
-                "",
-                0,
-                true
-            );
+            lv_obj_create(parent_obj);
 
         objects.error_box =
             obj;
@@ -490,10 +524,94 @@ void create_screen_main(void)
             100
         );
 
-        lv_obj_set_style_align(
+        lv_obj_set_style_radius(
             obj,
-            LV_ALIGN_DEFAULT,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            6,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_bg_color(
+            obj,
+            lv_color_hex(0xFF0000),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_bg_opa(
+            obj,
+            LV_OPA_COVER,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_border_width(
+            obj,
+            2,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_border_color(
+            obj,
+            lv_color_hex(0xFFFFFF),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        // =================================================
+        // ERROR TEXT
+        // =================================================
+
+        lv_obj_t *text =
+            lv_label_create(obj);
+
+        objects.error_text =
+            text;
+
+        lv_obj_set_pos(
+            text,
+            10,
+            20
+        );
+
+        lv_obj_set_size(
+            text,
+            160,
+            60
+        );
+
+        lv_label_set_long_mode(
+            text,
+            LV_LABEL_LONG_WRAP
+        );
+
+        lv_obj_set_style_text_color(
+            text,
+            lv_color_hex(0xFFFFFF),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_text_align(
+            text,
+            LV_TEXT_ALIGN_CENTER,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_label_set_text(
+            text,
+            ""
+        );
+
+        // =================================================
+        // HIDE INITIALLY
+        // =================================================
+
+        lv_obj_add_flag(
+            obj,
+            LV_OBJ_FLAG_HIDDEN
         );
     }
 
@@ -523,6 +641,11 @@ void create_screen_main(void)
         lv_label_set_text_static(
             obj,
             "LOW VOLTAGE !"
+        );
+
+        lv_obj_add_flag(
+            obj,
+            LV_OBJ_FLAG_HIDDEN
         );
     }
 
@@ -612,7 +735,8 @@ void create_screen_settings_page(void)
         lv_obj_set_style_align(
             label,
             LV_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_text_static(
@@ -669,7 +793,8 @@ void create_screen_settings_page(void)
         lv_obj_set_style_align(
             label,
             LV_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_text_static(
@@ -726,7 +851,8 @@ void create_screen_settings_page(void)
         lv_obj_set_style_align(
             label,
             LV_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_text_static(
@@ -783,7 +909,8 @@ void create_screen_settings_page(void)
         lv_obj_set_style_align(
             label,
             LV_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_text_static(
@@ -976,7 +1103,8 @@ void create_screen_buzzer_settings(void)
         lv_obj_set_style_align(
             label,
             LV_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_text_static(
@@ -1050,7 +1178,7 @@ void create_screen_v_c_range_settings(void)
     }
 
     // =================================================
-    // VOLTAGE MIN
+    // VOLTAGE MIN SLIDER
     // =================================================
 
     {
@@ -1250,7 +1378,7 @@ void create_screen_v_c_range_settings(void)
 
         lv_label_set_text_static(
             obj,
-            "24 V"
+            "25 V"
         );
     }
 
@@ -1279,7 +1407,7 @@ void create_screen_v_c_range_settings(void)
 
         lv_label_set_text_static(
             obj,
-            "1 A"
+            "0 A"
         );
     }
 
@@ -1308,12 +1436,12 @@ void create_screen_v_c_range_settings(void)
 
         lv_label_set_text_static(
             obj,
-            "2 A"
+            "1 A"
         );
     }
 
     // =================================================
-    // VOLTAGE MAX
+    // VOLTAGE MAX SLIDER
     // =================================================
 
     {
@@ -1343,7 +1471,7 @@ void create_screen_v_c_range_settings(void)
 
         lv_slider_set_value(
             obj,
-            24,
+            25,
             LV_ANIM_OFF
         );
 
@@ -1356,7 +1484,7 @@ void create_screen_v_c_range_settings(void)
     }
 
     // =================================================
-    // CURRENT MIN
+    // CURRENT MIN SLIDER
     // =================================================
 
     {
@@ -1386,7 +1514,7 @@ void create_screen_v_c_range_settings(void)
 
         lv_slider_set_value(
             obj,
-            1,
+            0,
             LV_ANIM_OFF
         );
 
@@ -1399,7 +1527,7 @@ void create_screen_v_c_range_settings(void)
     }
 
     // =================================================
-    // CURRENT MAX
+    // CURRENT MAX SLIDER
     // =================================================
 
     {
@@ -1429,7 +1557,7 @@ void create_screen_v_c_range_settings(void)
 
         lv_slider_set_value(
             obj,
-            2,
+            1,
             LV_ANIM_OFF
         );
 
