@@ -478,7 +478,6 @@ static void led_task(void)
     }
 
     led_blink_timer = now;
-
     led_blink_state = !led_blink_state;
 
     if (led_blink_state)
@@ -935,9 +934,7 @@ static void buzzer_task(void)
     }
     else
     {
-        noTone(
-            BUZZER_PIN
-        );
+        noTone(BUZZER_PIN);
 
         if (buzzer_mode == BUZZER_MODE_2)
         {
@@ -1006,24 +1003,15 @@ static ErrorType get_error_type(void)
 
 static void update_error_box(void)
 {
-    if (objects.error_box == NULL)
+    if (
+        objects.error_box == NULL ||
+        objects.error_label == NULL
+    )
     {
         return;
     }
 
     ErrorType error = get_error_type();
-
-    if ((int)error == gui_last_error)
-    {
-        return;
-    }
-
-    gui_last_error = (int)error;
-
-    lv_obj_t *text =
-        lv_msgbox_get_text(
-            objects.error_box
-        );
 
     // =================================================
     // NO ERROR
@@ -1031,26 +1019,32 @@ static void update_error_box(void)
 
     if (error == ERROR_NONE)
     {
+        lv_label_set_text(
+            objects.error_label,
+            ""
+        );
+
+        lv_obj_add_flag(
+            objects.error_label,
+            LV_OBJ_FLAG_HIDDEN
+        );
+
         lv_obj_add_flag(
             objects.error_box,
             LV_OBJ_FLAG_HIDDEN
         );
 
-        if (text != NULL)
-        {
-            lv_label_set_text(
-                text,
-                ""
-            );
-        }
+        gui_last_error = ERROR_NONE;
 
         return;
     }
 
-    char message[96];
+    char message[64];
+
+    uint32_t box_color = LED_RED;
 
     // =================================================
-    // CONNECTION
+    // CONNECTION LOST
     // =================================================
 
     if (error == ERROR_CONNECTION)
@@ -1061,11 +1055,7 @@ static void update_error_box(void)
             "CONNECTION LOST"
         );
 
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(LED_ORANGE),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+        box_color = LED_ORANGE;
     }
 
     // =================================================
@@ -1077,17 +1067,10 @@ static void update_error_box(void)
         snprintf(
             message,
             sizeof(message),
-            "VOLTAGE TOO LOW\n"
-            "%.2f V < %.0f V",
-            system_state.voltage,
-            voltage_min_limit
+            "VOLTAGE TOO LOW"
         );
 
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(LED_RED),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+        box_color = LED_RED;
     }
 
     // =================================================
@@ -1099,17 +1082,10 @@ static void update_error_box(void)
         snprintf(
             message,
             sizeof(message),
-            "VOLTAGE TOO HIGH\n"
-            "%.2f V > %.0f V",
-            system_state.voltage,
-            voltage_max_limit
+            "VOLTAGE TOO HIGH"
         );
 
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(LED_RED),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+        box_color = LED_RED;
     }
 
     // =================================================
@@ -1121,17 +1097,10 @@ static void update_error_box(void)
         snprintf(
             message,
             sizeof(message),
-            "CURRENT TOO LOW\n"
-            "%.2f A < %.0f A",
-            system_state.current,
-            current_min_limit
+            "CURRENT TOO LOW"
         );
 
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(LED_RED),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+        box_color = LED_RED;
     }
 
     // =================================================
@@ -1143,22 +1112,53 @@ static void update_error_box(void)
         snprintf(
             message,
             sizeof(message),
-            "CURRENT TOO HIGH\n"
-            "%.2f A > %.0f A",
-            system_state.current,
-            current_max_limit
+            "CURRENT TOO HIGH"
         );
 
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(LED_RED),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
+        box_color = LED_RED;
     }
 
     // =================================================
-    // BOX OPACITY
+    // ERROR TEXT
     // =================================================
+
+    lv_label_set_text(
+        objects.error_label,
+        message
+    );
+
+    // Slightly move text to the left
+    lv_obj_set_x(
+        objects.error_label,
+        90
+    );
+
+    lv_obj_set_style_text_color(
+        objects.error_label,
+        lv_color_hex(0xFFFFFF),
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+
+    lv_obj_set_style_text_align(
+        objects.error_label,
+        LV_TEXT_ALIGN_LEFT,
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+
+    lv_label_set_long_mode(
+        objects.error_label,
+        LV_LABEL_LONG_WRAP
+    );
+
+    // =================================================
+    // ERROR BOX STYLE
+    // =================================================
+
+    lv_obj_set_style_bg_color(
+        objects.error_box,
+        lv_color_hex(box_color),
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
 
     lv_obj_set_style_bg_opa(
         objects.error_box,
@@ -1167,42 +1167,20 @@ static void update_error_box(void)
     );
 
     // =================================================
-    // TEXT
-    // =================================================
-
-    if (text != NULL)
-    {
-        lv_label_set_text(
-            text,
-            message
-        );
-
-        lv_obj_set_style_text_color(
-            text,
-            lv_color_hex(0xFFFFFF),
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_text_align(
-            text,
-            LV_TEXT_ALIGN_CENTER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
-        );
-
-        lv_label_set_long_mode(
-            text,
-            LV_LABEL_LONG_WRAP
-        );
-    }
-
-    // =================================================
     // SHOW
     // =================================================
+
+    lv_obj_clear_flag(
+        objects.error_label,
+        LV_OBJ_FLAG_HIDDEN
+    );
 
     lv_obj_clear_flag(
         objects.error_box,
         LV_OBJ_FLAG_HIDDEN
     );
+
+    gui_last_error = error;
 }
 
 // ==================================================
@@ -1266,31 +1244,6 @@ static void gui_update(void)
     }
 
     // =================================================
-    // LOW VOLTAGE LABEL
-    // =================================================
-
-    if (objects.low_voltage_label != NULL)
-    {
-        if (system_state.low_voltage)
-        {
-            lv_obj_clear_flag(
-                objects.low_voltage_label,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-        else
-        {
-            lv_obj_add_flag(
-                objects.low_voltage_label,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-
-        gui_last_low_voltage =
-            system_state.low_voltage;
-    }
-
-    // =================================================
     // ERROR BOX
     // =================================================
 
@@ -1299,6 +1252,9 @@ static void gui_update(void)
     // =================================================
     // CACHE
     // =================================================
+
+    gui_last_low_voltage =
+        system_state.low_voltage;
 
     gui_last_connection_lost =
         system_state.connection_lost;
@@ -1346,10 +1302,6 @@ static void update_led_state(void)
 
     led_last_state = error;
 
-    // =================================================
-    // CONNECTION
-    // =================================================
-
     if (error == ERROR_CONNECTION)
     {
         set_status_led_blink(
@@ -1358,10 +1310,6 @@ static void update_led_state(void)
 
         return;
     }
-
-    // =================================================
-    // NO DATA
-    // =================================================
 
     if (!system_state.data_received)
     {
@@ -1372,10 +1320,6 @@ static void update_led_state(void)
         return;
     }
 
-    // =================================================
-    // OK
-    // =================================================
-
     if (error == ERROR_NONE)
     {
         set_status_led(
@@ -1385,22 +1329,9 @@ static void update_led_state(void)
         return;
     }
 
-    // =================================================
-    // FAULT
-    // =================================================
-
     set_status_led_blink(
         LED_RED
     );
-}
-
-// ==================================================
-// WATCHDOG
-// ==================================================
-
-static void watchdog_task(void)
-{
-    yield();
 }
 
 // ==================================================
@@ -1424,19 +1355,13 @@ void tasks_init(void)
         OUTPUT
     );
 
-    noTone(
-        BUZZER_PIN
-    );
+    noTone(BUZZER_PIN);
 
     right_last_state =
-        digitalRead(
-            BTN_RIGHT
-        );
+        digitalRead(BTN_RIGHT);
 
     select_last_state =
-        digitalRead(
-            BTN_SELECT
-        );
+        digitalRead(BTN_SELECT);
 
     right_last_change = millis();
     select_last_change = millis();
@@ -1494,31 +1419,6 @@ void tasks_init(void)
             LV_PART_MAIN | LV_STATE_DEFAULT
         );
 
-        lv_obj_t *text =
-            lv_msgbox_get_text(
-                objects.error_box
-            );
-
-        if (text != NULL)
-        {
-            lv_obj_set_style_text_color(
-                text,
-                lv_color_hex(0xFFFFFF),
-                LV_PART_MAIN | LV_STATE_DEFAULT
-            );
-
-            lv_obj_set_style_text_align(
-                text,
-                LV_TEXT_ALIGN_CENTER,
-                LV_PART_MAIN | LV_STATE_DEFAULT
-            );
-
-            lv_label_set_long_mode(
-                text,
-                LV_LABEL_LONG_WRAP
-            );
-        }
-
         Serial.println(
             "ERROR BOX = EEZ LV_MSGBOX"
         );
@@ -1531,14 +1431,51 @@ void tasks_init(void)
     }
 
     // =================================================
-    // LOW VOLTAGE LABEL
+    // ERROR LABEL
     // =================================================
 
-    if (objects.low_voltage_label != NULL)
+    if (objects.error_label != NULL)
     {
+        lv_label_set_text(
+            objects.error_label,
+            ""
+        );
+
         lv_obj_add_flag(
-            objects.low_voltage_label,
+            objects.error_label,
             LV_OBJ_FLAG_HIDDEN
+        );
+
+        lv_obj_set_x(
+            objects.error_label,
+            15
+        );
+
+        lv_obj_set_style_text_color(
+            objects.error_label,
+            lv_color_hex(0xFFFFFF),
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_text_align(
+            objects.error_label,
+            LV_TEXT_ALIGN_LEFT,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_label_set_long_mode(
+            objects.error_label,
+            LV_LABEL_LONG_WRAP
+        );
+
+        Serial.println(
+            "ERROR LABEL = EEZ LV_LABEL"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "ERROR LABEL = NULL"
         );
     }
 
@@ -1579,6 +1516,7 @@ void tasks_init(void)
     Serial.println("WATCHDOG = ENABLED");
     Serial.println("LED = EEZ GENERATED LV_LED");
     Serial.println("ERROR BOX = EEZ GENERATED LV_MSGBOX");
+    Serial.println("ERROR LABEL = EEZ GENERATED LV_LABEL");
     Serial.println("UART TIMEOUT = 3000 ms");
     Serial.println("DEFAULT V RANGE = 20..25 V");
     Serial.println("DEFAULT C RANGE = 0..1 A");
@@ -1592,15 +1530,10 @@ void tasks_init(void)
 void tasks_run(void)
 {
     buttons_task();
-
     uart_task();
-
     safety_task();
-
     buzzer_task();
-
     gui_task();
-
     led_task();
 
     screen_manager_process();

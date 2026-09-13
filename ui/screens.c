@@ -98,12 +98,12 @@ void create_screen_main() {
             lv_obj_set_style_align(obj, LV_ALIGN_DEFAULT, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {
-            // low_voltage_label
+            // error_label
             lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.low_voltage_label = obj;
+            objects.error_label = obj;
             lv_obj_set_pos(obj, 103, 126);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "LOW VOLTAGE !");
+            lv_label_set_text(obj, "");
         }
     }
     

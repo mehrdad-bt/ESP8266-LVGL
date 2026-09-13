@@ -175,7 +175,9 @@ void setup()
     // ==================================================
 
     tft.begin();
+
     tft.setRotation(1);
+
     tft.setTouch(calData);
 
     Serial.println("TFT initialized");
@@ -359,24 +361,46 @@ void setup()
     // ==================================================
 
     if (objects.voltage != NULL)
-        Serial.println("Voltage label found");
+    {
+        Serial.println(
+            "Voltage label found"
+        );
+    }
 
     if (objects.current != NULL)
-        Serial.println("Current label found");
+    {
+        Serial.println(
+            "Current label found"
+        );
+    }
 
     if (objects.obj0 != NULL)
-        Serial.println("Status LED found");
+    {
+        Serial.println(
+            "Status LED found"
+        );
+    }
 
     if (objects.error_box != NULL)
-        Serial.println("Error box found");
+    {
+        Serial.println(
+            "Error box found"
+        );
+    }
 
-    if (objects.low_voltage_label != NULL)
-        Serial.println("Low voltage label found");
+    if (objects.error_label != NULL)
+    {
+        Serial.println(
+            "Error label found"
+        );
+    }
 
     if (objects.v_c_range_settings != NULL)
+    {
         Serial.println(
             "V/C Range screen found"
         );
+    }
 
     // ==================================================
     // FINAL MEMORY

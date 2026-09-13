@@ -28,7 +28,7 @@ typedef struct _objects_t {
     lv_obj_t *current;
     lv_obj_t *obj0;
     lv_obj_t *error_box;
-    lv_obj_t *low_voltage_label;
+    lv_obj_t *error_label;
     lv_obj_t *exit_settings;
     lv_obj_t *buzzer;
     lv_obj_t *touch_calibration;
