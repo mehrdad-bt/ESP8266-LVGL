@@ -12,7 +12,9 @@ extern "C"
 
 void screen_manager_init(void);
 
-void screen_manager_show(enum ScreensEnum screen);
+void screen_manager_show(
+    enum ScreensEnum screen
+);
 
 void screen_manager_process(void);
 
@@ -20,7 +22,9 @@ void screen_manager_reload(void);
 
 enum ScreensEnum screen_manager_get(void);
 
-bool screen_manager_is(enum ScreensEnum screen);
+bool screen_manager_is(
+    enum ScreensEnum screen
+);
 
 #ifdef __cplusplus
 }
