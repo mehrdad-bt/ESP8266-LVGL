@@ -323,12 +323,22 @@ void create_screen_main(void)
     }
 
     // =================================================
-    // STATUS LED
+    // STATUS OBJECT
+    // =================================================
+    //
+    // IMPORTANT:
+    // این آبجکت قبلاً lv_led بود و باعث crash در
+    // مسیر lv_led_event / lv_draw_mask_radius می‌شد.
+    //
+    // حالا یک lv_obj ساده است.
+    // فعلاً radius = 0 تا هیچ rounded mask استفاده نشود.
+    // در tasks.cpp همچنان objects.obj0 معتبر است.
+    //
     // =================================================
 
     {
         lv_obj_t *obj =
-            lv_led_create(parent_obj);
+            lv_obj_create(parent_obj);
 
         objects.obj0 =
             obj;
@@ -345,14 +355,31 @@ void create_screen_main(void)
             32
         );
 
-        lv_led_set_color(
+        // بدون گوشه‌گردی
+        lv_obj_set_style_radius(
             obj,
-            lv_color_hex(0x0000FF)
+            0,
+            LV_PART_MAIN | LV_STATE_DEFAULT
         );
 
-        lv_led_set_brightness(
+        // حذف border
+        lv_obj_set_style_border_width(
             obj,
-            255
+            0,
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        // رنگ اولیه فقط برای تست
+        lv_obj_set_style_bg_color(
+            obj,
+            lv_color_hex(0x0000FF),
+            LV_PART_MAIN | LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_bg_opa(
+            obj,
+            LV_OPA_COVER,
+            LV_PART_MAIN | LV_STATE_DEFAULT
         );
     }
 
