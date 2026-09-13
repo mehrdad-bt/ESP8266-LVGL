@@ -1,18 +1,15 @@
-
 #include "actions.h"
 #include "screens.h"
 
-#include "../screen_manager.h"
-#include "../touchCalibration.h"
-#include "../tasks.h"
+#include "screen_manager.h"
+#include "touchCalibration.h"
+#include "tasks.h"
 
 // ==================================================
-// GO TO SETTINGS
+// MAIN -> SETTINGS
 // ==================================================
 
-void action_go_to_settings_page(
-    lv_event_t *e
-)
+void action_go_to_settings_page(lv_event_t *e)
 {
     (void)e;
 
@@ -22,12 +19,10 @@ void action_go_to_settings_page(
 }
 
 // ==================================================
-// EXIT SETTINGS -> MAIN
+// SETTINGS -> MAIN
 // ==================================================
 
-void action_exit_to_main_page(
-    lv_event_t *e
-)
+void action_exit_to_main_page(lv_event_t *e)
 {
     (void)e;
 
@@ -40,9 +35,7 @@ void action_exit_to_main_page(
 // SETTINGS -> BUZZER
 // ==================================================
 
-void action_go_to_buzzer_settings(
-    lv_event_t *e
-)
+void action_go_to_buzzer_settings(lv_event_t *e)
 {
     (void)e;
 
@@ -52,33 +45,29 @@ void action_go_to_buzzer_settings(
 }
 
 // ==================================================
-// SETTINGS -> V/C RANGE
+// SETTINGS -> TOUCH CALIBRATION
 // ==================================================
 
-void action_go_to_v_c_range_settings(
-    lv_event_t *e
-)
-{
-    (void)e;
-
-    screen_manager_show(
-        SCREEN_ID_V_C_RANGE_SETTINGS
-    );
-}
-
-// ==================================================
-// TOUCH CALIBRATION
-// ==================================================
-
-void action_go_to_touch_calibration(
-    lv_event_t *e
-)
+void action_go_to_touch_calibration(lv_event_t *e)
 {
     (void)e;
 
     touch_calibration_start();
 
     screen_manager_reload();
+}
+
+// ==================================================
+// SETTINGS -> V/C RANGE
+// ==================================================
+
+void action_go_to_v_c_range_settings(lv_event_t *e)
+{
+    (void)e;
+
+    screen_manager_show(
+        SCREEN_ID_V_C_RANGE_SETTINGS
+    );
 }
 
 // ==================================================
@@ -100,7 +89,7 @@ void action_go_from_buzzer_settings_page_to_settings_page(
 // V/C RANGE -> SETTINGS
 // ==================================================
 
-void action_go_from_v_c_range_settings_page_to_settings_page(
+void action_exit_from_v_c_menu_to_settings(
     lv_event_t *e
 )
 {
@@ -112,19 +101,14 @@ void action_go_from_v_c_range_settings_page_to_settings_page(
 }
 
 // ==================================================
-// VOLTAGE MIN CHANGED
+// VOLTAGE MIN
 // ==================================================
 
-void action_voltage_min_changed(
-    lv_event_t *e
-)
+void action_voltage_min_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (
-        objects.voltage_minimum ==
-        NULL
-    )
+    if (objects.voltage_minimum == NULL)
     {
         return;
     }
@@ -134,25 +118,20 @@ void action_voltage_min_changed(
             objects.voltage_minimum
         );
 
-    set_voltage_min_limit(
+    set_var_voltage_min(
         (float)value
     );
 }
 
 // ==================================================
-// VOLTAGE MAX CHANGED
+// VOLTAGE MAX
 // ==================================================
 
-void action_voltage_max_changed(
-    lv_event_t *e
-)
+void action_voltage_max_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (
-        objects.voltage_maximum ==
-        NULL
-    )
+    if (objects.voltage_maximum == NULL)
     {
         return;
     }
@@ -162,25 +141,20 @@ void action_voltage_max_changed(
             objects.voltage_maximum
         );
 
-    set_voltage_max_limit(
+    set_var_voltage_max(
         (float)value
     );
 }
 
 // ==================================================
-// CURRENT MIN CHANGED
+// CURRENT MIN
 // ==================================================
 
-void action_current_min_changed(
-    lv_event_t *e
-)
+void action_current_min_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (
-        objects.current_minimum ==
-        NULL
-    )
+    if (objects.current_minimum == NULL)
     {
         return;
     }
@@ -190,25 +164,20 @@ void action_current_min_changed(
             objects.current_minimum
         );
 
-    set_current_min_limit(
+    set_var_current_min(
         (float)value
     );
 }
 
 // ==================================================
-// CURRENT MAX CHANGED
+// CURRENT MAX
 // ==================================================
 
-void action_current_max_changed(
-    lv_event_t *e
-)
+void action_current_max_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (
-        objects.current_maximum ==
-        NULL
-    )
+    if (objects.current_maximum == NULL)
     {
         return;
     }
@@ -218,7 +187,7 @@ void action_current_max_changed(
             objects.current_maximum
         );
 
-    set_current_max_limit(
+    set_var_current_max(
         (float)value
     );
 }

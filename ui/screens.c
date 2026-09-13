@@ -18,6 +18,50 @@ objects_t objects;
 
 lv_obj_t *tick_value_change_obj;
 
+static void event_handler_cb_v_c_range_settings_voltage_minimum(lv_event_t *e) {
+    lv_event_code_t event = lv_event_get_code(e);
+    if (event == LV_EVENT_VALUE_CHANGED) {
+        lv_obj_t *ta = lv_event_get_target(e);
+        if (tick_value_change_obj != ta) {
+            int32_t value = lv_slider_get_value(ta);
+            set_var_voltage_min(value);
+        }
+    }
+}
+
+static void event_handler_cb_v_c_range_settings_voltage_maximum(lv_event_t *e) {
+    lv_event_code_t event = lv_event_get_code(e);
+    if (event == LV_EVENT_VALUE_CHANGED) {
+        lv_obj_t *ta = lv_event_get_target(e);
+        if (tick_value_change_obj != ta) {
+            int32_t value = lv_slider_get_value(ta);
+            set_var_voltage_max(value);
+        }
+    }
+}
+
+static void event_handler_cb_v_c_range_settings_current_minimum(lv_event_t *e) {
+    lv_event_code_t event = lv_event_get_code(e);
+    if (event == LV_EVENT_VALUE_CHANGED) {
+        lv_obj_t *ta = lv_event_get_target(e);
+        if (tick_value_change_obj != ta) {
+            int32_t value = lv_slider_get_value(ta);
+            set_var_current_min(value);
+        }
+    }
+}
+
+static void event_handler_cb_v_c_range_settings_current_maximum(lv_event_t *e) {
+    lv_event_code_t event = lv_event_get_code(e);
+    if (event == LV_EVENT_VALUE_CHANGED) {
+        lv_obj_t *ta = lv_event_get_target(e);
+        if (tick_value_change_obj != ta) {
+            int32_t value = lv_slider_get_value(ta);
+            set_var_current_max(value);
+        }
+    }
+}
+
 //
 // Screens
 //
@@ -272,33 +316,32 @@ void create_screen_v_c_range_settings() {
             // voltage_minimum
             lv_obj_t *obj = lv_slider_create(parent_obj);
             objects.voltage_minimum = obj;
-            lv_obj_set_pos(obj, 61, 83);
+            lv_obj_set_pos(obj, 61, 59);
             lv_obj_set_size(obj, 150, 10);
             lv_slider_set_range(obj, 0, 30);
-            lv_slider_set_value(obj, 20, LV_ANIM_ON);
-            lv_obj_add_event_cb(obj, action_voltage_min_changed, LV_EVENT_VALUE_CHANGED, (void *)0);
+            lv_obj_add_event_cb(obj, event_handler_cb_v_c_range_settings_voltage_minimum, LV_EVENT_ALL, 0);
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 6, 80);
+            lv_obj_set_pos(obj, 8, 56);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "V Min");
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 6, 119);
+            lv_obj_set_pos(obj, 6, 96);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "V Max");
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 4, 154);
+            lv_obj_set_pos(obj, 3, 132);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "C Min");
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 4, 190);
+            lv_obj_set_pos(obj, 6, 167);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "C Max");
         }
@@ -306,63 +349,78 @@ void create_screen_v_c_range_settings() {
             // voltage_min_value
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.voltage_min_value = obj;
-            lv_obj_set_pos(obj, 237, 80);
+            lv_obj_set_pos(obj, 237, 56);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Text");
+            lv_label_set_text(obj, "");
         }
         {
             // voltage_max_value
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.voltage_max_value = obj;
-            lv_obj_set_pos(obj, 237, 112);
+            lv_obj_set_pos(obj, 237, 96);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Text");
+            lv_label_set_text(obj, "");
         }
         {
             // current_min_value
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.current_min_value = obj;
-            lv_obj_set_pos(obj, 237, 154);
+            lv_obj_set_pos(obj, 238, 132);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Text");
+            lv_label_set_text(obj, "");
         }
         {
             // current_max_value
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.current_max_value = obj;
-            lv_obj_set_pos(obj, 237, 188);
+            lv_obj_set_pos(obj, 240, 167);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Text");
+            lv_label_set_text(obj, "");
         }
         {
             // voltage_maximum
             lv_obj_t *obj = lv_slider_create(parent_obj);
             objects.voltage_maximum = obj;
-            lv_obj_set_pos(obj, 61, 123);
+            lv_obj_set_pos(obj, 61, 99);
             lv_obj_set_size(obj, 150, 10);
             lv_slider_set_range(obj, 0, 30);
-            lv_slider_set_value(obj, 24, LV_ANIM_OFF);
-            lv_obj_add_event_cb(obj, action_voltage_max_changed, LV_EVENT_VALUE_CHANGED, (void *)0);
+            lv_obj_add_event_cb(obj, event_handler_cb_v_c_range_settings_voltage_maximum, LV_EVENT_ALL, 0);
         }
         {
             // current_minimum
             lv_obj_t *obj = lv_slider_create(parent_obj);
             objects.current_minimum = obj;
-            lv_obj_set_pos(obj, 61, 160);
+            lv_obj_set_pos(obj, 61, 135);
             lv_obj_set_size(obj, 150, 10);
             lv_slider_set_range(obj, 0, 3);
-            lv_slider_set_value(obj, 1, LV_ANIM_OFF);
-            lv_obj_add_event_cb(obj, action_current_min_changed, LV_EVENT_VALUE_CHANGED, (void *)0);
+            lv_obj_add_event_cb(obj, event_handler_cb_v_c_range_settings_current_minimum, LV_EVENT_ALL, 0);
         }
         {
             // current_maximum
             lv_obj_t *obj = lv_slider_create(parent_obj);
             objects.current_maximum = obj;
-            lv_obj_set_pos(obj, 61, 194);
+            lv_obj_set_pos(obj, 61, 170);
             lv_obj_set_size(obj, 150, 10);
             lv_slider_set_range(obj, 0, 3);
-            lv_slider_set_value(obj, 2, LV_ANIM_OFF);
-            lv_obj_add_event_cb(obj, action_current_max_changed, LV_EVENT_VALUE_CHANGED, (void *)0);
+            lv_obj_add_event_cb(obj, event_handler_cb_v_c_range_settings_current_maximum, LV_EVENT_ALL, 0);
+        }
+        {
+            lv_obj_t *obj = lv_btn_create(parent_obj);
+            lv_obj_set_pos(obj, 254, 196);
+            lv_obj_set_size(obj, 57, 34);
+            lv_obj_add_event_cb(obj, action_exit_from_v_c_menu_to_settings, LV_EVENT_PRESSED, (void *)0);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    // exit_from_v/c_menu_button
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.exit_from_v_c_menu_button = obj;
+                    lv_obj_set_pos(obj, 0, 0);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text_static(obj, "EXIT");
+                }
+            }
         }
     }
     
@@ -370,6 +428,78 @@ void create_screen_v_c_range_settings() {
 }
 
 void tick_screen_v_c_range_settings() {
+    {
+        int32_t new_val = get_var_voltage_min();
+        int32_t cur_val = lv_slider_get_value(objects.voltage_minimum);
+        if (new_val != cur_val) {
+            tick_value_change_obj = objects.voltage_minimum;
+            lv_slider_set_value(objects.voltage_minimum, new_val, LV_ANIM_ON);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        const char *new_val = get_var_current_min_text();
+        const char *cur_val = lv_label_get_text(objects.voltage_min_value);
+        if (strcmp(new_val, cur_val) != 0) {
+            tick_value_change_obj = objects.voltage_min_value;
+            lv_label_set_text(objects.voltage_min_value, new_val);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        const char *new_val = get_var_voltage_max_text();
+        const char *cur_val = lv_label_get_text(objects.voltage_max_value);
+        if (strcmp(new_val, cur_val) != 0) {
+            tick_value_change_obj = objects.voltage_max_value;
+            lv_label_set_text(objects.voltage_max_value, new_val);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        const char *new_val = get_var_current_min_text();
+        const char *cur_val = lv_label_get_text(objects.current_min_value);
+        if (strcmp(new_val, cur_val) != 0) {
+            tick_value_change_obj = objects.current_min_value;
+            lv_label_set_text(objects.current_min_value, new_val);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        const char *new_val = get_var_current_max_text();
+        const char *cur_val = lv_label_get_text(objects.current_max_value);
+        if (strcmp(new_val, cur_val) != 0) {
+            tick_value_change_obj = objects.current_max_value;
+            lv_label_set_text(objects.current_max_value, new_val);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        int32_t new_val = get_var_voltage_max();
+        int32_t cur_val = lv_slider_get_value(objects.voltage_maximum);
+        if (new_val != cur_val) {
+            tick_value_change_obj = objects.voltage_maximum;
+            lv_slider_set_value(objects.voltage_maximum, new_val, LV_ANIM_ON);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        int32_t new_val = get_var_current_min();
+        int32_t cur_val = lv_slider_get_value(objects.current_minimum);
+        if (new_val != cur_val) {
+            tick_value_change_obj = objects.current_minimum;
+            lv_slider_set_value(objects.current_minimum, new_val, LV_ANIM_ON);
+            tick_value_change_obj = NULL;
+        }
+    }
+    {
+        int32_t new_val = get_var_current_max();
+        int32_t cur_val = lv_slider_get_value(objects.current_maximum);
+        if (new_val != cur_val) {
+            tick_value_change_obj = objects.current_maximum;
+            lv_slider_set_value(objects.current_maximum, new_val, LV_ANIM_OFF);
+            tick_value_change_obj = NULL;
+        }
+    }
 }
 
 typedef void (*tick_screen_func_t)();

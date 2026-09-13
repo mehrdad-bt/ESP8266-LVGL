@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <lvgl.h>
 
@@ -161,6 +162,7 @@ static float current_max_limit =
 // ==================================================
 
 static uint32_t last_valid_uart_time = 0;
+
 static bool valid_uart_received_once = false;
 
 // ==================================================
@@ -177,46 +179,68 @@ static uint32_t select_last_change = 0;
 // MENU SELECTION
 // ==================================================
 
-static int main_selection = MAIN_OPTION_SETTINGS;
-static int settings_selection = SETTINGS_OPTION_BUZZER;
+static int main_selection =
+    MAIN_OPTION_SETTINGS;
+
+static int settings_selection =
+    SETTINGS_OPTION_BUZZER;
 
 // ==================================================
 // BUZZER STATE
 // ==================================================
 
-static uint8_t buzzer_mode = BUZZER_MODE_1;
+static uint8_t buzzer_mode =
+    BUZZER_MODE_1;
 
-static bool buzzer_output_state = false;
+static bool buzzer_output_state =
+    false;
 
-static uint32_t buzzer_timer = 0;
-static uint8_t buzzer_phase = 0;
+static uint32_t buzzer_timer =
+    0;
+
+static uint8_t buzzer_phase =
+    0;
 
 // ==================================================
 // LED STATE
 // ==================================================
 
-static uint32_t led_blink_color = LED_BLUE;
+static uint32_t led_blink_color =
+    LED_BLUE;
 
-static bool led_blink_state = true;
+static bool led_blink_state =
+    true;
 
-static uint32_t led_blink_timer = 0;
+static uint32_t led_blink_timer =
+    0;
 
-static bool led_blink_enable = false;
+static bool led_blink_enable =
+    false;
 
-static ErrorType led_last_state = ERROR_NONE;
+static ErrorType led_last_state =
+    ERROR_NONE;
 
 // ==================================================
 // GUI CACHE
 // ==================================================
 
-static float gui_last_voltage = -1000.0f;
-static float gui_last_current = -1000.0f;
+static float gui_last_voltage =
+    -1000.0f;
 
-static bool gui_last_low_voltage = false;
-static bool gui_last_connection_lost = false;
-static bool gui_last_system_ok = false;
+static float gui_last_current =
+    -1000.0f;
 
-static int gui_last_error = -1;
+static bool gui_last_low_voltage =
+    false;
+
+static bool gui_last_connection_lost =
+    false;
+
+static bool gui_last_system_ok =
+    false;
+
+static int gui_last_error =
+    -1;
 
 // ==================================================
 // FORWARD DECLARATIONS
@@ -225,6 +249,21 @@ static int gui_last_error = -1;
 static void update_led_state(void);
 static void update_error_box(void);
 static ErrorType get_error_type(void);
+static bool main_screen_active(void);
+
+// ==================================================
+// CHECK ACTIVE SCREEN
+// ==================================================
+
+static bool main_screen_active(void)
+{
+    if (objects.main == NULL)
+    {
+        return false;
+    }
+
+    return lv_scr_act() == objects.main;
+}
 
 // ==================================================
 // BUZZER SET MODE
@@ -402,6 +441,11 @@ float get_current_max_limit(void)
 
 static void led_apply_color(uint32_t color)
 {
+    if (!main_screen_active())
+    {
+        return;
+    }
+
     if (objects.obj0 == NULL)
     {
         return;
@@ -460,6 +504,11 @@ static void set_status_led_blink(uint32_t color)
 
 static void led_task(void)
 {
+    if (!main_screen_active())
+    {
+        return;
+    }
+
     if (objects.obj0 == NULL)
     {
         return;
@@ -472,7 +521,10 @@ static void led_task(void)
 
     uint32_t now = millis();
 
-    if (now - led_blink_timer < 500)
+    if (
+        now - led_blink_timer <
+        500
+    )
     {
         return;
     }
@@ -482,7 +534,9 @@ static void led_task(void)
 
     if (led_blink_state)
     {
-        led_apply_color(led_blink_color);
+        led_apply_color(
+            led_blink_color
+        );
     }
     else
     {
@@ -504,7 +558,8 @@ static void clear_settings_highlight(void)
         lv_obj_set_style_border_width(
             objects.buzzer,
             0,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
     }
 
@@ -513,7 +568,8 @@ static void clear_settings_highlight(void)
         lv_obj_set_style_border_width(
             objects.touch_calibration,
             0,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
     }
 
@@ -522,7 +578,8 @@ static void clear_settings_highlight(void)
         lv_obj_set_style_border_width(
             objects.voltage_range,
             0,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
     }
 
@@ -531,7 +588,8 @@ static void clear_settings_highlight(void)
         lv_obj_set_style_border_width(
             objects.exit_settings,
             0,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
     }
 }
@@ -573,7 +631,8 @@ static void apply_settings_highlight(void)
         lv_obj_set_style_border_width(
             selected,
             2,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
     }
 }
@@ -584,38 +643,60 @@ static void apply_settings_highlight(void)
 
 static void buttons_task(void)
 {
-    bool right_state = digitalRead(BTN_RIGHT);
-    bool select_state = digitalRead(BTN_SELECT);
+    bool right_state =
+        digitalRead(BTN_RIGHT);
 
-    uint32_t now = millis();
+    bool select_state =
+        digitalRead(BTN_SELECT);
+
+    uint32_t now =
+        millis();
 
     // =================================================
     // RIGHT
     // =================================================
 
-    if (right_state != right_last_state)
+    if (
+        right_state !=
+        right_last_state
+    )
     {
-        if (now - right_last_change >= BUTTON_DEBOUNCE_MS)
+        if (
+            now - right_last_change >=
+            BUTTON_DEBOUNCE_MS
+        )
         {
             right_last_change = now;
             right_last_state = right_state;
 
             if (right_state == LOW)
             {
-                Serial.println("BUTTON: RIGHT");
+                Serial.println(
+                    "BUTTON: RIGHT"
+                );
 
                 enum ScreensEnum screen =
                     screen_manager_get();
 
-                if (screen == SCREEN_ID_MAIN)
+                if (
+                    screen ==
+                    SCREEN_ID_MAIN
+                )
                 {
-                    main_selection = MAIN_OPTION_SETTINGS;
+                    main_selection =
+                        MAIN_OPTION_SETTINGS;
                 }
-                else if (screen == SCREEN_ID_SETTINGS_PAGE)
+                else if (
+                    screen ==
+                    SCREEN_ID_SETTINGS_PAGE
+                )
                 {
                     settings_selection++;
 
-                    if (settings_selection > SETTINGS_OPTION_BACK)
+                    if (
+                        settings_selection >
+                        SETTINGS_OPTION_BACK
+                    )
                     {
                         settings_selection =
                             SETTINGS_OPTION_BUZZER;
@@ -623,13 +704,19 @@ static void buttons_task(void)
 
                     apply_settings_highlight();
                 }
-                else if (screen == SCREEN_ID_BUZZER_SETTINGS)
+                else if (
+                    screen ==
+                    SCREEN_ID_BUZZER_SETTINGS
+                )
                 {
                     Serial.println(
                         "BUTTON: RIGHT -> BUZZER"
                     );
                 }
-                else if (screen == SCREEN_ID_V_C_RANGE_SETTINGS)
+                else if (
+                    screen ==
+                    SCREEN_ID_V_C_RANGE_SETTINGS
+                )
                 {
                     Serial.println(
                         "BUTTON: RIGHT -> V/C RANGE"
@@ -643,16 +730,24 @@ static void buttons_task(void)
     // SELECT
     // =================================================
 
-    if (select_state != select_last_state)
+    if (
+        select_state !=
+        select_last_state
+    )
     {
-        if (now - select_last_change >= BUTTON_DEBOUNCE_MS)
+        if (
+            now - select_last_change >=
+            BUTTON_DEBOUNCE_MS
+        )
         {
             select_last_change = now;
             select_last_state = select_state;
 
             if (select_state == LOW)
             {
-                Serial.println("BUTTON: SELECT");
+                Serial.println(
+                    "BUTTON: SELECT"
+                );
 
                 enum ScreensEnum screen =
                     screen_manager_get();
@@ -661,11 +756,19 @@ static void buttons_task(void)
                 // MAIN
                 // =========================================
 
-                if (screen == SCREEN_ID_MAIN)
+                if (
+                    screen ==
+                    SCREEN_ID_MAIN
+                )
                 {
-                    if (main_selection == MAIN_OPTION_SETTINGS)
+                    if (
+                        main_selection ==
+                        MAIN_OPTION_SETTINGS
+                    )
                     {
-                        action_go_to_settings_page(NULL);
+                        action_go_to_settings_page(
+                            NULL
+                        );
                     }
                 }
 
@@ -673,9 +776,14 @@ static void buttons_task(void)
                 // SETTINGS
                 // =========================================
 
-                else if (screen == SCREEN_ID_SETTINGS_PAGE)
+                else if (
+                    screen ==
+                    SCREEN_ID_SETTINGS_PAGE
+                )
                 {
-                    switch (settings_selection)
+                    switch (
+                        settings_selection
+                    )
                     {
                         case SETTINGS_OPTION_BUZZER:
 
@@ -683,7 +791,9 @@ static void buttons_task(void)
                                 "ACTION: SETTINGS -> BUZZER"
                             );
 
-                            action_go_to_buzzer_settings(NULL);
+                            action_go_to_buzzer_settings(
+                                NULL
+                            );
 
                             break;
 
@@ -693,7 +803,9 @@ static void buttons_task(void)
                                 "ACTION: SETTINGS -> CALIBRATION"
                             );
 
-                            action_go_to_touch_calibration(NULL);
+                            action_go_to_touch_calibration(
+                                NULL
+                            );
 
                             break;
 
@@ -703,7 +815,9 @@ static void buttons_task(void)
                                 "ACTION: SETTINGS -> V/C RANGE"
                             );
 
-                            action_go_to_v_c_range_settings(NULL);
+                            action_go_to_v_c_range_settings(
+                                NULL
+                            );
 
                             break;
 
@@ -713,7 +827,9 @@ static void buttons_task(void)
                                 "ACTION: SETTINGS -> MAIN"
                             );
 
-                            action_exit_to_main_page(NULL);
+                            action_exit_to_main_page(
+                                NULL
+                            );
 
                             break;
 
@@ -726,7 +842,10 @@ static void buttons_task(void)
                 // BUZZER
                 // =========================================
 
-                else if (screen == SCREEN_ID_BUZZER_SETTINGS)
+                else if (
+                    screen ==
+                    SCREEN_ID_BUZZER_SETTINGS
+                )
                 {
                     action_go_from_buzzer_settings_page_to_settings_page(
                         NULL
@@ -737,14 +856,17 @@ static void buttons_task(void)
                 // V/C RANGE
                 // =========================================
 
-                else if (screen == SCREEN_ID_V_C_RANGE_SETTINGS)
+                else if (
+                    screen ==
+                    SCREEN_ID_V_C_RANGE_SETTINGS
+                )
                 {
                     Serial.println(
                         "ACTION: V/C RANGE -> SETTINGS"
                     );
 
-                    screen_manager_show(
-                        SCREEN_ID_SETTINGS_PAGE
+                    action_exit_from_v_c_menu_to_settings(
+                        NULL
                     );
                 }
             }
@@ -770,15 +892,26 @@ static void uart_task(void)
         )
     )
     {
-        system_state.voltage = new_voltage;
-        system_state.current = new_current;
+        system_state.voltage =
+            new_voltage;
 
-        system_state.data_received = true;
-        system_state.uart_timeout = false;
-        system_state.connection_lost = false;
+        system_state.current =
+            new_current;
 
-        last_valid_uart_time = millis();
-        valid_uart_received_once = true;
+        system_state.data_received =
+            true;
+
+        system_state.uart_timeout =
+            false;
+
+        system_state.connection_lost =
+            false;
+
+        last_valid_uart_time =
+            millis();
+
+        valid_uart_received_once =
+            true;
     }
 }
 
@@ -788,33 +921,48 @@ static void uart_task(void)
 
 static void safety_task(void)
 {
-    uint32_t now = millis();
+    uint32_t now =
+        millis();
 
     // =================================================
-    // UART TIMEOUT
+    // UART CONNECTION
     // =================================================
 
     if (!valid_uart_received_once)
     {
-        system_state.data_received = false;
-        system_state.uart_timeout = true;
-        system_state.connection_lost = true;
+        system_state.data_received =
+            false;
+
+        system_state.uart_timeout =
+            true;
+
+        system_state.connection_lost =
+            true;
+    }
+    else if (
+        now - last_valid_uart_time >
+        UART_TIMEOUT_MS
+    )
+    {
+        system_state.data_received =
+            false;
+
+        system_state.uart_timeout =
+            true;
+
+        system_state.connection_lost =
+            true;
     }
     else
     {
-        if (
-            now - last_valid_uart_time >
-            UART_TIMEOUT_MS
-        )
-        {
-            system_state.uart_timeout = true;
-            system_state.connection_lost = true;
-        }
-        else
-        {
-            system_state.uart_timeout = false;
-            system_state.connection_lost = false;
-        }
+        system_state.data_received =
+            true;
+
+        system_state.uart_timeout =
+            false;
+
+        system_state.connection_lost =
+            false;
     }
 
     // =================================================
@@ -825,7 +973,8 @@ static void safety_task(void)
         (
             system_state.voltage >=
             voltage_min_limit
-        ) &&
+        )
+        &&
         (
             system_state.voltage <=
             voltage_max_limit
@@ -839,7 +988,8 @@ static void safety_task(void)
         (
             system_state.current >=
             current_min_limit
-        ) &&
+        )
+        &&
         (
             system_state.current <=
             current_max_limit
@@ -895,18 +1045,26 @@ static void buzzer_task(void)
         return;
     }
 
-    uint32_t now = millis();
+    uint32_t now =
+        millis();
 
-    uint32_t interval = 0;
+    uint32_t interval =
+        0;
 
-    if (buzzer_mode == BUZZER_MODE_1)
+    if (
+        buzzer_mode ==
+        BUZZER_MODE_1
+    )
     {
         interval =
             buzzer_output_state ?
             200 :
             700;
     }
-    else if (buzzer_mode == BUZZER_MODE_2)
+    else if (
+        buzzer_mode ==
+        BUZZER_MODE_2
+    )
     {
         interval = 100;
     }
@@ -915,7 +1073,10 @@ static void buzzer_task(void)
         interval = 500;
     }
 
-    if (now - buzzer_timer < interval)
+    if (
+        now - buzzer_timer <
+        interval
+    )
     {
         return;
     }
@@ -934,13 +1095,21 @@ static void buzzer_task(void)
     }
     else
     {
-        noTone(BUZZER_PIN);
+        noTone(
+            BUZZER_PIN
+        );
 
-        if (buzzer_mode == BUZZER_MODE_2)
+        if (
+            buzzer_mode ==
+            BUZZER_MODE_2
+        )
         {
             buzzer_phase++;
 
-            if (buzzer_phase >= 2)
+            if (
+                buzzer_phase >=
+                2
+            )
             {
                 buzzer_phase = 0;
             }
@@ -954,6 +1123,10 @@ static void buzzer_task(void)
 
 static ErrorType get_error_type(void)
 {
+    // =================================================
+    // CONNECTION HAS HIGHEST PRIORITY
+    // =================================================
+
     if (
         system_state.connection_lost ||
         system_state.uart_timeout
@@ -961,6 +1134,10 @@ static ErrorType get_error_type(void)
     {
         return ERROR_CONNECTION;
     }
+
+    // =================================================
+    // VOLTAGE
+    // =================================================
 
     if (
         system_state.voltage <
@@ -977,6 +1154,10 @@ static ErrorType get_error_type(void)
     {
         return ERROR_VOLTAGE_HIGH;
     }
+
+    // =================================================
+    // CURRENT
+    // =================================================
 
     if (
         system_state.current <
@@ -1003,6 +1184,12 @@ static ErrorType get_error_type(void)
 
 static void update_error_box(void)
 {
+    // Error widgets belong to MAIN.
+    if (!main_screen_active())
+    {
+        return;
+    }
+
     if (
         objects.error_box == NULL ||
         objects.error_label == NULL
@@ -1011,159 +1198,143 @@ static void update_error_box(void)
         return;
     }
 
-    ErrorType error = get_error_type();
+    ErrorType error =
+        get_error_type();
 
     // =================================================
     // NO ERROR
     // =================================================
 
-    if (error == ERROR_NONE)
+    if (
+        error ==
+        ERROR_NONE
+    )
     {
-        lv_label_set_text(
-            objects.error_label,
-            ""
-        );
+        if (
+            gui_last_error !=
+            ERROR_NONE
+        )
+        {
+            lv_label_set_text(
+                objects.error_label,
+                ""
+            );
 
-        lv_obj_add_flag(
-            objects.error_label,
-            LV_OBJ_FLAG_HIDDEN
-        );
+            lv_obj_add_flag(
+                objects.error_label,
+                LV_OBJ_FLAG_HIDDEN
+            );
 
-        lv_obj_add_flag(
-            objects.error_box,
-            LV_OBJ_FLAG_HIDDEN
-        );
+            lv_obj_add_flag(
+                objects.error_box,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
 
-        gui_last_error = ERROR_NONE;
+        gui_last_error =
+            ERROR_NONE;
 
         return;
     }
 
-    char message[64];
-
-    uint32_t box_color = LED_RED;
-
     // =================================================
-    // CONNECTION LOST
+    // SAME ERROR
     // =================================================
 
-    if (error == ERROR_CONNECTION)
+    if (
+        gui_last_error ==
+        error
+    )
     {
-        snprintf(
-            message,
-            sizeof(message),
-            "CONNECTION LOST"
-        );
-
-        box_color = LED_ORANGE;
+        return;
     }
 
     // =================================================
-    // VOLTAGE LOW
+    // MESSAGE
     // =================================================
 
-    else if (error == ERROR_VOLTAGE_LOW)
-    {
-        snprintf(
-            message,
-            sizeof(message),
-            "VOLTAGE TOO LOW"
-        );
+    const char *message =
+        "";
 
-        box_color = LED_RED;
+    if (
+        error ==
+        ERROR_CONNECTION
+    )
+    {
+        message =
+            "CONNECTION LOST";
+    }
+    else if (
+        error ==
+        ERROR_VOLTAGE_LOW
+    )
+    {
+        message =
+            "VOLTAGE TOO LOW";
+    }
+    else if (
+        error ==
+        ERROR_VOLTAGE_HIGH
+    )
+    {
+        message =
+            "VOLTAGE TOO HIGH";
+    }
+    else if (
+        error ==
+        ERROR_CURRENT_LOW
+    )
+    {
+        message =
+            "CURRENT TOO LOW";
+    }
+    else if (
+        error ==
+        ERROR_CURRENT_HIGH
+    )
+    {
+        message =
+            "CURRENT TOO HIGH";
     }
 
     // =================================================
-    // VOLTAGE HIGH
+    // COLOR
     // =================================================
 
-    else if (error == ERROR_VOLTAGE_HIGH)
+    uint32_t box_color;
+
+    if (
+        error ==
+        ERROR_CONNECTION
+    )
     {
-        snprintf(
-            message,
-            sizeof(message),
-            "VOLTAGE TOO HIGH"
-        );
-
-        box_color = LED_RED;
+        box_color =
+            LED_ORANGE;
     }
-
-    // =================================================
-    // CURRENT LOW
-    // =================================================
-
-    else if (error == ERROR_CURRENT_LOW)
-    {
-        snprintf(
-            message,
-            sizeof(message),
-            "CURRENT TOO LOW"
-        );
-
-        box_color = LED_RED;
-    }
-
-    // =================================================
-    // CURRENT HIGH
-    // =================================================
-
     else
     {
-        snprintf(
-            message,
-            sizeof(message),
-            "CURRENT TOO HIGH"
-        );
-
-        box_color = LED_RED;
+        box_color =
+            LED_RED;
     }
 
     // =================================================
-    // ERROR TEXT
-    // =================================================
-
-    lv_label_set_text(
-        objects.error_label,
-        message
-    );
-
-    // Slightly move text to the left
-    lv_obj_set_x(
-        objects.error_label,
-        90
-    );
-
-    lv_obj_set_style_text_color(
-        objects.error_label,
-        lv_color_hex(0xFFFFFF),
-        LV_PART_MAIN | LV_STATE_DEFAULT
-    );
-
-    lv_obj_set_style_text_align(
-        objects.error_label,
-        LV_TEXT_ALIGN_LEFT,
-        LV_PART_MAIN | LV_STATE_DEFAULT
-    );
-
-    lv_label_set_long_mode(
-        objects.error_label,
-        LV_LABEL_LONG_WRAP
-    );
-
-    // =================================================
-    // ERROR BOX STYLE
+    // SET COLOR
     // =================================================
 
     lv_obj_set_style_bg_color(
         objects.error_box,
         lv_color_hex(box_color),
-        LV_PART_MAIN | LV_STATE_DEFAULT
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
     );
 
-    lv_obj_set_style_bg_opa(
-        objects.error_box,
-        LV_OPA_COVER,
-        LV_PART_MAIN | LV_STATE_DEFAULT
+    // =================================================
+    // SET TEXT
+    // =================================================
+
+    lv_label_set_text(
+        objects.error_label,
+        message
     );
 
     // =================================================
@@ -1180,7 +1351,8 @@ static void update_error_box(void)
         LV_OBJ_FLAG_HIDDEN
     );
 
-    gui_last_error = error;
+    gui_last_error =
+        error;
 }
 
 // ==================================================
@@ -1189,13 +1361,19 @@ static void update_error_box(void)
 
 static void gui_update(void)
 {
+    if (!main_screen_active())
+    {
+        return;
+    }
+
     // =================================================
     // VOLTAGE
     // =================================================
 
     if (
         objects.voltage != NULL &&
-        system_state.voltage != gui_last_voltage
+        system_state.voltage !=
+        gui_last_voltage
     )
     {
         char text[24];
@@ -1222,7 +1400,8 @@ static void gui_update(void)
 
     if (
         objects.current != NULL &&
-        system_state.current != gui_last_current
+        system_state.current !=
+        gui_last_current
     )
     {
         char text[24];
@@ -1244,7 +1423,7 @@ static void gui_update(void)
     }
 
     // =================================================
-    // ERROR BOX
+    // ERROR
     // =================================================
 
     update_error_box();
@@ -1269,16 +1448,22 @@ static void gui_update(void)
 
 static void gui_task(void)
 {
-    static uint32_t last_gui_update = 0;
+    static uint32_t last_gui_update =
+        0;
 
-    uint32_t now = millis();
+    uint32_t now =
+        millis();
 
-    if (now - last_gui_update < 20)
+    if (
+        now - last_gui_update <
+        20
+    )
     {
         return;
     }
 
-    last_gui_update = now;
+    last_gui_update =
+        now;
 
     gui_update();
 
@@ -1293,16 +1478,33 @@ static void gui_task(void)
 
 static void update_led_state(void)
 {
-    ErrorType error = get_error_type();
-
-    if (error == led_last_state)
+    if (!main_screen_active())
     {
         return;
     }
 
-    led_last_state = error;
+    ErrorType error =
+        get_error_type();
 
-    if (error == ERROR_CONNECTION)
+    if (
+        error ==
+        led_last_state
+    )
+    {
+        return;
+    }
+
+    led_last_state =
+        error;
+
+    // =================================================
+    // CONNECTION LOST
+    // =================================================
+
+    if (
+        error ==
+        ERROR_CONNECTION
+    )
     {
         set_status_led_blink(
             LED_ORANGE
@@ -1311,7 +1513,13 @@ static void update_led_state(void)
         return;
     }
 
-    if (!system_state.data_received)
+    // =================================================
+    // NO DATA
+    // =================================================
+
+    if (
+        !system_state.data_received
+    )
     {
         set_status_led(
             LED_BLUE
@@ -1320,7 +1528,14 @@ static void update_led_state(void)
         return;
     }
 
-    if (error == ERROR_NONE)
+    // =================================================
+    // OK
+    // =================================================
+
+    if (
+        error ==
+        ERROR_NONE
+    )
     {
         set_status_led(
             LED_GREEN
@@ -1328,6 +1543,10 @@ static void update_led_state(void)
 
         return;
     }
+
+    // =================================================
+    // OTHER FAULT
+    // =================================================
 
     set_status_led_blink(
         LED_RED
@@ -1355,7 +1574,9 @@ void tasks_init(void)
         OUTPUT
     );
 
-    noTone(BUZZER_PIN);
+    noTone(
+        BUZZER_PIN
+    );
 
     right_last_state =
         digitalRead(BTN_RIGHT);
@@ -1363,17 +1584,25 @@ void tasks_init(void)
     select_last_state =
         digitalRead(BTN_SELECT);
 
-    right_last_change = millis();
-    select_last_change = millis();
+    right_last_change =
+        millis();
 
-    buzzer_timer = millis();
-    led_blink_timer = millis();
+    select_last_change =
+        millis();
+
+    buzzer_timer =
+        millis();
+
+    led_blink_timer =
+        millis();
 
     // =================================================
     // LED
     // =================================================
 
-    if (objects.obj0 != NULL)
+    if (
+        objects.obj0 != NULL
+    )
     {
         lv_led_set_color(
             objects.obj0,
@@ -1400,23 +1629,28 @@ void tasks_init(void)
     // ERROR BOX
     // =================================================
 
-    if (objects.error_box != NULL)
+    if (
+        objects.error_box != NULL
+    )
     {
         lv_obj_add_flag(
             objects.error_box,
             LV_OBJ_FLAG_HIDDEN
         );
 
+        // Style is configured ONLY ONCE here.
         lv_obj_set_style_bg_color(
             objects.error_box,
             lv_color_hex(LED_RED),
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_obj_set_style_bg_opa(
             objects.error_box,
             LV_OPA_COVER,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         Serial.println(
@@ -1434,7 +1668,9 @@ void tasks_init(void)
     // ERROR LABEL
     // =================================================
 
-    if (objects.error_label != NULL)
+    if (
+        objects.error_label != NULL
+    )
     {
         lv_label_set_text(
             objects.error_label,
@@ -1448,19 +1684,21 @@ void tasks_init(void)
 
         lv_obj_set_x(
             objects.error_label,
-            15
+            90
         );
 
         lv_obj_set_style_text_color(
             objects.error_label,
             lv_color_hex(0xFFFFFF),
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_obj_set_style_text_align(
             objects.error_label,
             LV_TEXT_ALIGN_LEFT,
-            LV_PART_MAIN | LV_STATE_DEFAULT
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
         );
 
         lv_label_set_long_mode(
@@ -1489,38 +1727,95 @@ void tasks_init(void)
     // CACHE
     // =================================================
 
-    gui_last_voltage = -1000.0f;
-    gui_last_current = -1000.0f;
+    gui_last_voltage =
+        -1000.0f;
 
-    gui_last_low_voltage = false;
-    gui_last_connection_lost = false;
-    gui_last_system_ok = false;
+    gui_last_current =
+        -1000.0f;
 
-    gui_last_error = -1;
+    gui_last_low_voltage =
+        false;
 
-    led_last_state = ERROR_NONE;
+    gui_last_connection_lost =
+        false;
+
+    gui_last_system_ok =
+        false;
+
+    gui_last_error =
+        -1;
+
+    led_last_state =
+        ERROR_NONE;
 
     // =================================================
     // LOG
     // =================================================
 
     Serial.println();
-    Serial.println("==============================");
-    Serial.println("TASK SYSTEM INITIALIZED");
-    Serial.println("RIGHT  = D1");
-    Serial.println("SELECT = D4");
-    Serial.println("BUZZER = D0");
-    Serial.println("BUZZER MODE 1 = SINGLE BEEP");
-    Serial.println("BUZZER MODE 2 = DOUBLE BEEP");
-    Serial.println("BUZZER MODE 3 = LONG BEEP");
-    Serial.println("WATCHDOG = ENABLED");
-    Serial.println("LED = EEZ GENERATED LV_LED");
-    Serial.println("ERROR BOX = EEZ GENERATED LV_MSGBOX");
-    Serial.println("ERROR LABEL = EEZ GENERATED LV_LABEL");
-    Serial.println("UART TIMEOUT = 3000 ms");
-    Serial.println("DEFAULT V RANGE = 20..25 V");
-    Serial.println("DEFAULT C RANGE = 0..1 A");
-    Serial.println("==============================");
+    Serial.println(
+        "=============================="
+    );
+
+    Serial.println(
+        "TASK SYSTEM INITIALIZED"
+    );
+
+    Serial.println(
+        "RIGHT  = D1"
+    );
+
+    Serial.println(
+        "SELECT = D4"
+    );
+
+    Serial.println(
+        "BUZZER = D0"
+    );
+
+    Serial.println(
+        "BUZZER MODE 1 = SINGLE BEEP"
+    );
+
+    Serial.println(
+        "BUZZER MODE 2 = DOUBLE BEEP"
+    );
+
+    Serial.println(
+        "BUZZER MODE 3 = LONG BEEP"
+    );
+
+    Serial.println(
+        "WATCHDOG = ENABLED"
+    );
+
+    Serial.println(
+        "LED = EEZ GENERATED LV_LED"
+    );
+
+    Serial.println(
+        "ERROR BOX = EEZ GENERATED LV_MSGBOX"
+    );
+
+    Serial.println(
+        "ERROR LABEL = EEZ GENERATED LV_LABEL"
+    );
+
+    Serial.println(
+        "UART TIMEOUT = 3000 ms"
+    );
+
+    Serial.println(
+        "DEFAULT V RANGE = 20..25 V"
+    );
+
+    Serial.println(
+        "DEFAULT C RANGE = 0..1 A"
+    );
+
+    Serial.println(
+        "=============================="
+    );
 }
 
 // ==================================================
@@ -1530,11 +1825,17 @@ void tasks_init(void)
 void tasks_run(void)
 {
     buttons_task();
+
     uart_task();
+
     safety_task();
+
     buzzer_task();
+
     gui_task();
+
     led_task();
 
     screen_manager_process();
 }
+

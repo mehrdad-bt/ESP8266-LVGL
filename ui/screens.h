@@ -43,6 +43,7 @@ typedef struct _objects_t {
     lv_obj_t *voltage_maximum;
     lv_obj_t *current_minimum;
     lv_obj_t *current_maximum;
+    lv_obj_t *exit_from_v_c_menu_button;
 } objects_t;
 
 extern objects_t objects;
