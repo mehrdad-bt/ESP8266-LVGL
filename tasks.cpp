@@ -35,7 +35,6 @@ extern lv_obj_t *tick_value_change_obj;
 // ==================================================
 
 #define BUTTON_DEBOUNCE_MS 50
-#define BUTTON_LONG_PRESS_MS 700
 
 // ==================================================
 // MAIN MENU
@@ -100,6 +99,12 @@ extern lv_obj_t *tick_value_change_obj;
 // ==================================================
 
 #define UART_TIMEOUT_MS 3000
+
+// ==================================================
+// ERROR TEXT BLINK
+// ==================================================
+
+#define ERROR_TEXT_BLINK_MS 500
 
 // ==================================================
 // ERROR TYPES
@@ -301,11 +306,21 @@ static float gui_last_current_max =
     -1000.0f;
 
 // ==================================================
-// INTERNAL ERROR MESSAGE LABEL
+// ERROR MESSAGE LABEL
 // ==================================================
 
 static lv_obj_t *error_msg_label =
     NULL;
+
+// ==================================================
+// ERROR TEXT BLINK STATE
+// ==================================================
+
+static uint32_t error_text_blink_timer =
+    0;
+
+static bool error_text_blink_state =
+    true;
 
 // ==================================================
 // ERROR BOX COLOR CACHE
@@ -336,6 +351,7 @@ static bool last_vc_edit_state =
 
 static void update_led_state(void);
 static void update_error_box(void);
+static void update_error_text_blink(void);
 static void update_vc_range_gui(void);
 static void update_buzzer_gui(void);
 static void update_input_focus_gui(void);
@@ -346,6 +362,7 @@ static bool vc_range_screen_active(void);
 static bool buzzer_screen_active(void);
 
 static void init_error_msgbox(void);
+static void set_error_text(const char *text);
 
 static void buttons_task(void);
 
@@ -405,7 +422,9 @@ static void buzzer_dropdown_find(void)
 {
     if (objects.buzzer_settings == NULL)
     {
-        buzzer_dropdown = NULL;
+        buzzer_dropdown =
+            NULL;
+
         return;
     }
 
@@ -434,6 +453,10 @@ static void init_error_msgbox(void)
         return;
     }
 
+    // ==================================================
+    // GET CONTENT
+    // ==================================================
+
     lv_obj_t *content =
         lv_msgbox_get_content(
             objects.error_box
@@ -447,6 +470,10 @@ static void init_error_msgbox(void)
 
         return;
     }
+
+    // ==================================================
+    // CREATE ONE LABEL
+    // ==================================================
 
     error_msg_label =
         lv_label_create(
@@ -462,20 +489,36 @@ static void init_error_msgbox(void)
         return;
     }
 
+    // ==================================================
+    // INITIAL TEXT
+    // ==================================================
+
     lv_label_set_text(
         error_msg_label,
         ""
     );
+
+    // ==================================================
+    // LONG TEXT
+    // ==================================================
 
     lv_label_set_long_mode(
         error_msg_label,
         LV_LABEL_LONG_WRAP
     );
 
+    // ==================================================
+    // WIDTH
+    // ==================================================
+
     lv_obj_set_width(
         error_msg_label,
         LV_PCT(100)
     );
+
+    // ==================================================
+    // TEXT ALIGNMENT
+    // ==================================================
 
     lv_obj_set_style_text_align(
         error_msg_label,
@@ -483,6 +526,10 @@ static void init_error_msgbox(void)
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
+
+    // ==================================================
+    // INITIAL COLOR = WHITE
+    // ==================================================
 
     lv_obj_set_style_text_color(
         error_msg_label,
@@ -492,18 +539,54 @@ static void init_error_msgbox(void)
     );
 
     // ==================================================
-    // MOVE TEXT SLIGHTLY DOWN
+    // VERTICAL POSITION
     // ==================================================
 
     lv_obj_set_y(
         error_msg_label,
-        10
+        40
     );
+
+    // ==================================================
+    // NO BORDER
+    // ==================================================
+
+    lv_obj_set_style_border_width(
+        error_msg_label,
+        0,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    // ==================================================
+    // NO BACKGROUND
+    // ==================================================
+
+    lv_obj_set_style_bg_opa(
+        error_msg_label,
+        LV_OPA_TRANSP,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    // ==================================================
+    // SHOW
+    // ==================================================
 
     lv_obj_clear_flag(
         error_msg_label,
         LV_OBJ_FLAG_HIDDEN
     );
+
+    // ==================================================
+    // RESET BLINK
+    // ==================================================
+
+    error_text_blink_timer =
+        millis();
+
+    error_text_blink_state =
+        true;
 
     Serial.println(
         "ERROR MSGBOX CONTENT = FOUND"
@@ -511,6 +594,107 @@ static void init_error_msgbox(void)
 
     Serial.println(
         "ERROR MSGBOX TEXT LABEL = CREATED"
+    );
+}
+
+// ==================================================
+// SET ERROR TEXT
+// ==================================================
+
+static void set_error_text(
+    const char *text
+)
+{
+    if (text == NULL)
+    {
+        text = "";
+    }
+
+    if (error_msg_label != NULL)
+    {
+        lv_label_set_text(
+            error_msg_label,
+            text
+        );
+
+        lv_obj_set_style_text_color(
+            error_msg_label,
+            lv_color_hex(0xFFFFFF),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    error_text_blink_timer =
+        millis();
+
+    error_text_blink_state =
+        true;
+}
+
+// ==================================================
+// ERROR TEXT BLINK TASK
+// ==================================================
+//
+// All errors:
+// BLACK <-> WHITE
+//
+
+static void update_error_text_blink(void)
+{
+    if (!main_screen_active())
+    {
+        return;
+    }
+
+    if (error_msg_label == NULL)
+    {
+        return;
+    }
+
+    if (
+        gui_last_error ==
+        ERROR_NONE
+    )
+    {
+        return;
+    }
+
+    uint32_t now =
+        millis();
+
+    if (
+        now - error_text_blink_timer <
+        ERROR_TEXT_BLINK_MS
+    )
+    {
+        return;
+    }
+
+    error_text_blink_timer =
+        now;
+
+    error_text_blink_state =
+        !error_text_blink_state;
+
+    uint32_t color;
+
+    if (error_text_blink_state)
+    {
+        color =
+            0x000000;
+    }
+    else
+    {
+        color =
+            0xFFFFFF;
+    }
+
+    lv_obj_set_style_text_color(
+        error_msg_label,
+        lv_color_hex(color),
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
     );
 }
 
@@ -1197,26 +1381,35 @@ static void apply_settings_highlight(void)
     switch (settings_selection)
     {
         case SETTINGS_OPTION_BUZZER:
+
             selected =
                 objects.buzzer;
+
             break;
 
         case SETTINGS_OPTION_CALIBRATION:
+
             selected =
                 objects.touch_calibration;
+
             break;
 
         case SETTINGS_OPTION_VC_RANGE:
+
             selected =
                 objects.voltage_range;
+
             break;
 
         case SETTINGS_OPTION_BACK:
+
             selected =
                 objects.exit_settings;
+
             break;
 
         default:
+
             break;
     }
 
@@ -1429,33 +1622,45 @@ static void apply_vc_focus(void)
     switch (vc_focus)
     {
         case 0:
+
             selected =
                 objects.voltage_minimum;
+
             break;
 
         case 1:
+
             selected =
                 objects.voltage_maximum;
+
             break;
 
         case 2:
+
             selected =
                 objects.current_minimum;
+
             break;
 
         case 3:
+
             selected =
                 objects.current_maximum;
+
             break;
 
         case 4:
+
             selected =
                 get_vc_back_button();
+
             break;
 
         default:
+
             selected =
                 NULL;
+
             break;
     }
 
@@ -1858,9 +2063,9 @@ static void handle_right_release(void)
         SCREEN_ID_BUZZER_SETTINGS
     )
     {
-        // ------------------------------------------------
+        // ----------------------------------------------
         // DROPDOWN OPEN
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         if (
             buzzer_dropdown_open
@@ -1873,9 +2078,9 @@ static void handle_right_release(void)
             return;
         }
 
-        // ------------------------------------------------
+        // ----------------------------------------------
         // NORMAL NAVIGATION
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         if (!buzzer_focus_back)
         {
@@ -1902,9 +2107,9 @@ static void handle_right_release(void)
         SCREEN_ID_V_C_RANGE_SETTINGS
     )
     {
-        // ------------------------------------------------
+        // ----------------------------------------------
         // EDIT MODE
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         if (vc_edit_mode)
         {
@@ -1913,9 +2118,9 @@ static void handle_right_release(void)
             return;
         }
 
-        // ------------------------------------------------
+        // ----------------------------------------------
         // NORMAL NAVIGATION
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         vc_focus++;
 
@@ -2046,9 +2251,9 @@ static void handle_select_release(void)
     {
         buzzer_dropdown_find();
 
-        // ------------------------------------------------
+        // ----------------------------------------------
         // DROPDOWN
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         if (!buzzer_focus_back)
         {
@@ -2102,9 +2307,9 @@ static void handle_select_release(void)
             return;
         }
 
-        // ------------------------------------------------
+        // ----------------------------------------------
         // BACK
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         Serial.println(
             "ACTION: BUZZER -> SETTINGS"
@@ -2126,9 +2331,9 @@ static void handle_select_release(void)
         SCREEN_ID_V_C_RANGE_SETTINGS
     )
     {
-        // ------------------------------------------------
+        // ----------------------------------------------
         // BACK
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         if (vc_focus == 4)
         {
@@ -2146,9 +2351,9 @@ static void handle_select_release(void)
             return;
         }
 
-        // ------------------------------------------------
+        // ----------------------------------------------
         // ENTER / EXIT EDIT
-        // ------------------------------------------------
+        // ----------------------------------------------
 
         vc_edit_mode =
             !vc_edit_mode;
@@ -2650,13 +2855,18 @@ static void update_error_box(void)
                 LV_OBJ_FLAG_HIDDEN
             );
 
-            lv_label_set_text(
-                error_msg_label,
+            set_error_text(
                 ""
             );
 
             gui_last_error =
                 ERROR_NONE;
+
+            error_text_blink_state =
+                true;
+
+            error_text_blink_timer =
+                millis();
         }
 
         return;
@@ -2757,32 +2967,20 @@ static void update_error_box(void)
     );
 
     // ==================================================
-    // UPDATE INTERNAL LABEL
+    // SET TEXT
     // ==================================================
 
-    lv_label_set_text(
-        error_msg_label,
+    set_error_text(
         message
     );
 
     // ==================================================
-    // ERROR TEXT COLOR
+    // INITIAL ERROR TEXT COLOR
     // ==================================================
 
     lv_obj_set_style_text_color(
         error_msg_label,
         lv_color_hex(0xFFFFFF),
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    // ==================================================
-    // CENTER TEXT
-    // ==================================================
-
-    lv_obj_set_style_text_align(
-        error_msg_label,
-        LV_TEXT_ALIGN_CENTER,
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
@@ -2798,7 +2996,9 @@ static void update_error_box(void)
     {
         lv_obj_set_style_bg_color(
             objects.error_box,
-            lv_color_hex(color),
+            lv_color_hex(
+                color
+            ),
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
@@ -2824,7 +3024,7 @@ static void update_error_box(void)
     );
 
     // ==================================================
-    // MAKE INTERNAL LABEL VISIBLE
+    // SHOW TEXT
     // ==================================================
 
     lv_obj_clear_flag(
@@ -2847,6 +3047,16 @@ static void update_error_box(void)
     }
 
     // ==================================================
+    // RESET BLINK
+    // ==================================================
+
+    error_text_blink_timer =
+        millis();
+
+    error_text_blink_state =
+        true;
+
+    // ==================================================
     // SAVE ERROR
     // ==================================================
 
@@ -2861,7 +3071,7 @@ static void update_error_box(void)
 static void gui_update(void)
 {
     // ==================================================
-    // MAIN SCREEN
+    // MAIN
     // ==================================================
 
     if (main_screen_active())
@@ -2927,6 +3137,12 @@ static void gui_update(void)
         // ==================================================
 
         update_error_box();
+
+        // ==================================================
+        // ERROR TEXT BLINK
+        // ==================================================
+
+        update_error_text_blink();
     }
 
     // ==================================================
@@ -3143,6 +3359,12 @@ void tasks_init(void)
     led_blink_timer =
         millis();
 
+    error_text_blink_timer =
+        millis();
+
+    error_text_blink_state =
+        true;
+
     // ==================================================
     // BUZZER DROPDOWN
     // ==================================================
@@ -3229,7 +3451,7 @@ void tasks_init(void)
         );
 
         // ----------------------------------------------
-        // SEMI-TRANSPARENT
+        // Semi-transparent
         // ----------------------------------------------
 
         lv_obj_set_style_bg_opa(
@@ -3243,13 +3465,21 @@ void tasks_init(void)
             LED_RED;
 
         // ----------------------------------------------
-        // Create actual text label inside MsgBox
+        // Create actual text label
         // ----------------------------------------------
 
         init_error_msgbox();
 
         Serial.println(
             "ERROR BOX = EEZ LV_MSGBOX"
+        );
+
+        Serial.println(
+            "ERROR BOX OPACITY = 60%"
+        );
+
+        Serial.println(
+            "ERROR TEXT = BLACK/WHITE BLINK"
         );
     }
     else
@@ -3441,6 +3671,10 @@ void tasks_init(void)
     );
 
     Serial.println(
+        "ERROR TEXT = BLACK/WHITE BLINK"
+    );
+
+    Serial.println(
         "ERROR LABEL = UNUSED"
     );
 
@@ -3450,6 +3684,10 @@ void tasks_init(void)
 
     Serial.println(
         "ERROR VOLTAGE/CURRENT = RED"
+    );
+
+    Serial.println(
+        "ERROR BOX OPACITY = 60%"
     );
 
     Serial.println(
@@ -3474,10 +3712,6 @@ void tasks_init(void)
 
     Serial.println(
         "V/C MIN/MAX = INDEPENDENT"
-    );
-
-    Serial.println(
-        "ERROR BOX OPACITY = 60%"
     );
 
     Serial.println(
