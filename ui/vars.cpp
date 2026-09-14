@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 
@@ -60,6 +59,33 @@ float get_var_current_max(void)
 void set_var_current_max(float value)
 {
     set_current_max_limit(value);
+}
+
+
+// ==================================================
+// BUZZER MODE
+// ==================================================
+
+int32_t get_var_buzzer_mode(void)
+{
+    return (int32_t)buzzer_get_mode();
+}
+
+void set_var_buzzer_mode(int32_t value)
+{
+    if (value < 0)
+    {
+        value = 0;
+    }
+
+    if (value > 2)
+    {
+        value = 2;
+    }
+
+    buzzer_set_mode(
+        (uint8_t)value
+    );
 }
 
 
@@ -185,4 +211,3 @@ void set_var_current_max_text(const char *value)
         sizeof(current_max_text_value) - 1
     ] = '\0';
 }
-

@@ -33,6 +33,7 @@ typedef struct _objects_t {
     lv_obj_t *buzzer;
     lv_obj_t *touch_calibration;
     lv_obj_t *voltage_range;
+    lv_obj_t *obj1;
     lv_obj_t *buzzer_settings_page_label;
     lv_obj_t *buzzer_settings_page_back_button;
     lv_obj_t *voltage_minimum;
