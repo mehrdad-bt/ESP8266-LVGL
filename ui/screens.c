@@ -148,8 +148,8 @@ void create_screen_main() {
             // Error Box
             lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, false);
             objects.error_box = obj;
-            lv_obj_set_pos(obj, 70, 80);
-            lv_obj_set_size(obj, 180, 100);
+            lv_obj_set_pos(obj, 39, 60);
+            lv_obj_set_size(obj, 235, 132);
             lv_obj_set_style_align(obj, LV_ALIGN_DEFAULT, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {

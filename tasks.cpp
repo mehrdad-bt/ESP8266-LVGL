@@ -491,6 +491,10 @@ static void init_error_msgbox(void)
         LV_STATE_DEFAULT
     );
 
+    // ==================================================
+    // MOVE TEXT SLIGHTLY DOWN
+    // ==================================================
+
     lv_obj_set_y(
         error_msg_label,
         10
@@ -1672,8 +1676,8 @@ static void buzzer_dropdown_change(
 // ==================================================
 //
 // Only INCREASE.
-// 30 -> 0 for voltage.
-// 3  -> 0 for current.
+// Voltage: 30 -> 0
+// Current: 3 -> 0
 //
 
 static void vc_change_value(void)
@@ -1854,6 +1858,10 @@ static void handle_right_release(void)
         SCREEN_ID_BUZZER_SETTINGS
     )
     {
+        // ------------------------------------------------
+        // DROPDOWN OPEN
+        // ------------------------------------------------
+
         if (
             buzzer_dropdown_open
         )
@@ -1864,6 +1872,10 @@ static void handle_right_release(void)
 
             return;
         }
+
+        // ------------------------------------------------
+        // NORMAL NAVIGATION
+        // ------------------------------------------------
 
         if (!buzzer_focus_back)
         {
@@ -1891,7 +1903,7 @@ static void handle_right_release(void)
     )
     {
         // ------------------------------------------------
-        // Edit mode = increase selected value
+        // EDIT MODE
         // ------------------------------------------------
 
         if (vc_edit_mode)
@@ -1902,7 +1914,7 @@ static void handle_right_release(void)
         }
 
         // ------------------------------------------------
-        // Navigation mode
+        // NORMAL NAVIGATION
         // ------------------------------------------------
 
         vc_focus++;
@@ -2034,9 +2046,9 @@ static void handle_select_release(void)
     {
         buzzer_dropdown_find();
 
-        // ----------------------------------------------
+        // ------------------------------------------------
         // DROPDOWN
-        // ----------------------------------------------
+        // ------------------------------------------------
 
         if (!buzzer_focus_back)
         {
@@ -2090,9 +2102,9 @@ static void handle_select_release(void)
             return;
         }
 
-        // ----------------------------------------------
+        // ------------------------------------------------
         // BACK
-        // ----------------------------------------------
+        // ------------------------------------------------
 
         Serial.println(
             "ACTION: BUZZER -> SETTINGS"
@@ -2114,9 +2126,9 @@ static void handle_select_release(void)
         SCREEN_ID_V_C_RANGE_SETTINGS
     )
     {
-        // ----------------------------------------------
+        // ------------------------------------------------
         // BACK
-        // ----------------------------------------------
+        // ------------------------------------------------
 
         if (vc_focus == 4)
         {
@@ -2134,9 +2146,9 @@ static void handle_select_release(void)
             return;
         }
 
-        // ----------------------------------------------
+        // ------------------------------------------------
         // ENTER / EXIT EDIT
-        // ----------------------------------------------
+        // ------------------------------------------------
 
         vc_edit_mode =
             !vc_edit_mode;
@@ -2207,6 +2219,10 @@ static void buttons_task(void)
             right_last_state =
                 right_state;
 
+            // ------------------------------------------
+            // PRESS
+            // ------------------------------------------
+
             if (
                 right_state == LOW
             )
@@ -2218,6 +2234,11 @@ static void buttons_task(void)
                     "BUTTON: RIGHT PRESS"
                 );
             }
+
+            // ------------------------------------------
+            // RELEASE
+            // ------------------------------------------
+
             else
             {
                 handle_right_release();
@@ -2245,6 +2266,10 @@ static void buttons_task(void)
             select_last_state =
                 select_state;
 
+            // ------------------------------------------
+            // PRESS
+            // ------------------------------------------
+
             if (
                 select_state == LOW
             )
@@ -2256,6 +2281,11 @@ static void buttons_task(void)
                     "BUTTON: SELECT PRESS"
                 );
             }
+
+            // ------------------------------------------
+            // RELEASE
+            // ------------------------------------------
+
             else
             {
                 handle_select_release();
@@ -2714,6 +2744,10 @@ static void update_error_box(void)
             break;
     }
 
+    // ==================================================
+    // LOG
+    // ==================================================
+
     Serial.print(
         "ERROR MSGBOX UPDATE: "
     );
@@ -2722,10 +2756,18 @@ static void update_error_box(void)
         message
     );
 
+    // ==================================================
+    // UPDATE INTERNAL LABEL
+    // ==================================================
+
     lv_label_set_text(
         error_msg_label,
         message
     );
+
+    // ==================================================
+    // ERROR TEXT COLOR
+    // ==================================================
 
     lv_obj_set_style_text_color(
         error_msg_label,
@@ -2734,12 +2776,20 @@ static void update_error_box(void)
         LV_STATE_DEFAULT
     );
 
+    // ==================================================
+    // CENTER TEXT
+    // ==================================================
+
     lv_obj_set_style_text_align(
         error_msg_label,
         LV_TEXT_ALIGN_CENTER,
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
+
+    // ==================================================
+    // ERROR BOX COLOR
+    // ==================================================
 
     if (
         error_box_last_color !=
@@ -2755,7 +2805,7 @@ static void update_error_box(void)
 
         lv_obj_set_style_bg_opa(
             objects.error_box,
-            LV_OPA_COVER,
+            LV_OPA_60,
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
@@ -2764,15 +2814,27 @@ static void update_error_box(void)
             color;
     }
 
+    // ==================================================
+    // SHOW MSGBOX
+    // ==================================================
+
     lv_obj_clear_flag(
         objects.error_box,
         LV_OBJ_FLAG_HIDDEN
     );
 
+    // ==================================================
+    // MAKE INTERNAL LABEL VISIBLE
+    // ==================================================
+
     lv_obj_clear_flag(
         error_msg_label,
         LV_OBJ_FLAG_HIDDEN
     );
+
+    // ==================================================
+    // SEPARATE EEZ LABEL MUST STAY HIDDEN
+    // ==================================================
 
     if (
         objects.error_label != NULL
@@ -2783,6 +2845,10 @@ static void update_error_box(void)
             LV_OBJ_FLAG_HIDDEN
         );
     }
+
+    // ==================================================
+    // SAVE ERROR
+    // ==================================================
 
     gui_last_error =
         error;
@@ -2795,11 +2861,15 @@ static void update_error_box(void)
 static void gui_update(void)
 {
     // ==================================================
-    // MAIN
+    // MAIN SCREEN
     // ==================================================
 
     if (main_screen_active())
     {
+        // ==================================================
+        // VOLTAGE
+        // ==================================================
+
         if (
             objects.voltage != NULL &&
             system_state.voltage !=
@@ -2823,6 +2893,10 @@ static void gui_update(void)
             gui_last_voltage =
                 system_state.voltage;
         }
+
+        // ==================================================
+        // CURRENT
+        // ==================================================
 
         if (
             objects.current != NULL &&
@@ -2848,11 +2922,15 @@ static void gui_update(void)
                 system_state.current;
         }
 
+        // ==================================================
+        // ERROR MSGBOX
+        // ==================================================
+
         update_error_box();
     }
 
     // ==================================================
-    // V/C
+    // V/C RANGE
     // ==================================================
 
     update_vc_range_gui();
@@ -2940,6 +3018,10 @@ static void update_led_state(void)
     led_last_state =
         error;
 
+    // ==================================================
+    // CONNECTION LOST
+    // ==================================================
+
     if (
         error ==
         ERROR_CONNECTION
@@ -2952,6 +3034,10 @@ static void update_led_state(void)
         return;
     }
 
+    // ==================================================
+    // NO DATA
+    // ==================================================
+
     if (
         !system_state.data_received
     )
@@ -2962,6 +3048,10 @@ static void update_led_state(void)
 
         return;
     }
+
+    // ==================================================
+    // OK
+    // ==================================================
 
     if (
         error ==
@@ -2974,6 +3064,10 @@ static void update_led_state(void)
 
         return;
     }
+
+    // ==================================================
+    // ERROR
+    // ==================================================
 
     set_status_led_blink(
         LED_RED
@@ -3112,10 +3206,18 @@ void tasks_init(void)
         objects.error_box != NULL
     )
     {
+        // ----------------------------------------------
+        // Hide initially
+        // ----------------------------------------------
+
         lv_obj_add_flag(
             objects.error_box,
             LV_OBJ_FLAG_HIDDEN
         );
+
+        // ----------------------------------------------
+        // Default color = RED
+        // ----------------------------------------------
 
         lv_obj_set_style_bg_color(
             objects.error_box,
@@ -3126,15 +3228,23 @@ void tasks_init(void)
             LV_STATE_DEFAULT
         );
 
+        // ----------------------------------------------
+        // SEMI-TRANSPARENT
+        // ----------------------------------------------
+
         lv_obj_set_style_bg_opa(
             objects.error_box,
-            LV_OPA_COVER,
+            LV_OPA_60,
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
 
         error_box_last_color =
             LED_RED;
+
+        // ----------------------------------------------
+        // Create actual text label inside MsgBox
+        // ----------------------------------------------
 
         init_error_msgbox();
 
@@ -3164,6 +3274,12 @@ void tasks_init(void)
 
         Serial.println(
             "ERROR LABEL = UNUSED"
+        );
+    }
+    else
+    {
+        Serial.println(
+            "ERROR LABEL = NULL"
         );
     }
 
@@ -3358,6 +3474,10 @@ void tasks_init(void)
 
     Serial.println(
         "V/C MIN/MAX = INDEPENDENT"
+    );
+
+    Serial.println(
+        "ERROR BOX OPACITY = 60%"
     );
 
     Serial.println(
