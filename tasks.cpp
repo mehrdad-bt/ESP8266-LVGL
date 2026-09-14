@@ -17,34 +17,28 @@ extern lv_obj_t *tick_value_change_obj;
 #include "ui/vars.h"
 
 // ==================================================
-// PHYSICAL BUTTONS
+// Hardware Configuration
 // ==================================================
 
 #define BTN_RIGHT   D1
 #define BTN_SELECT  D4
 
-// ==================================================
-// BUZZER
-// ==================================================
-
 #define BUZZER_PIN  D0
 #define BUZZER_FREQ 2000
 
 // ==================================================
-// BUTTON DEBOUNCE
+// Timing Configuration
 // ==================================================
 
 #define BUTTON_DEBOUNCE_MS 50
+#define UART_TIMEOUT_MS 3000
+#define ERROR_TEXT_BLINK_MS 500
 
 // ==================================================
-// MAIN MENU
+// Menu Indices
 // ==================================================
 
 #define MAIN_OPTION_SETTINGS 0
-
-// ==================================================
-// SETTINGS MENU
-// ==================================================
 
 #define SETTINGS_OPTION_BUZZER        0
 #define SETTINGS_OPTION_CALIBRATION   1
@@ -52,7 +46,7 @@ extern lv_obj_t *tick_value_change_obj;
 #define SETTINGS_OPTION_BACK          3
 
 // ==================================================
-// BUZZER MODES
+// Buzzer Modes
 // ==================================================
 
 #define BUZZER_MODE_1  0
@@ -60,7 +54,7 @@ extern lv_obj_t *tick_value_change_obj;
 #define BUZZER_MODE_3  2
 
 // ==================================================
-// LED COLORS
+// LED Colors
 // ==================================================
 
 #define LED_BLUE    0x0000FF
@@ -68,14 +62,10 @@ extern lv_obj_t *tick_value_change_obj;
 #define LED_RED     0xFF0000
 #define LED_ORANGE  0xFFA500
 
-// ==================================================
-// FOCUS COLOR
-// ==================================================
-
 #define FOCUS_COLOR 0xFF0000
 
 // ==================================================
-// DEFAULT LIMITS
+// Default Voltage and Current Limits
 // ==================================================
 
 #define DEFAULT_VOLTAGE_MIN 20.0f
@@ -85,7 +75,7 @@ extern lv_obj_t *tick_value_change_obj;
 #define DEFAULT_CURRENT_MAX 1.0f
 
 // ==================================================
-// LIMIT RANGES
+// Allowed Voltage and Current Limits
 // ==================================================
 
 #define VOLTAGE_LIMIT_MIN 0.0f
@@ -95,19 +85,7 @@ extern lv_obj_t *tick_value_change_obj;
 #define CURRENT_LIMIT_MAX 3.0f
 
 // ==================================================
-// UART TIMEOUT
-// ==================================================
-
-#define UART_TIMEOUT_MS 3000
-
-// ==================================================
-// ERROR TEXT BLINK
-// ==================================================
-
-#define ERROR_TEXT_BLINK_MS 500
-
-// ==================================================
-// ERROR TYPES
+// Error Types
 // ==================================================
 
 enum ErrorType
@@ -121,7 +99,7 @@ enum ErrorType
 };
 
 // ==================================================
-// SYSTEM STATE
+// System State
 // ==================================================
 
 struct SystemState
@@ -157,7 +135,7 @@ static SystemState system_state =
 };
 
 // ==================================================
-// LIMIT VALUES
+// Limit Values
 // ==================================================
 
 static float voltage_min_limit =
@@ -173,15 +151,14 @@ static float current_max_limit =
     DEFAULT_CURRENT_MAX;
 
 // ==================================================
-// UART TIMESTAMP
+// UART State
 // ==================================================
 
 static uint32_t last_valid_uart_time = 0;
-
 static bool valid_uart_received_once = false;
 
 // ==================================================
-// BUTTON STATE
+// Button State
 // ==================================================
 
 static bool right_last_state = HIGH;
@@ -190,11 +167,8 @@ static bool select_last_state = HIGH;
 static uint32_t right_last_change = 0;
 static uint32_t select_last_change = 0;
 
-static uint32_t right_press_start = 0;
-static uint32_t select_press_start = 0;
-
 // ==================================================
-// MENU SELECTION
+// Menu State
 // ==================================================
 
 static int main_selection =
@@ -204,7 +178,7 @@ static int settings_selection =
     SETTINGS_OPTION_BUZZER;
 
 // ==================================================
-// BUZZER STATE
+// Buzzer Runtime State
 // ==================================================
 
 static uint8_t buzzer_mode =
@@ -220,7 +194,7 @@ static uint8_t buzzer_phase =
     0;
 
 // ==================================================
-// BUZZER UI STATE
+// Buzzer UI State
 // ==================================================
 
 static lv_obj_t *buzzer_dropdown =
@@ -233,14 +207,14 @@ static bool buzzer_focus_back =
     false;
 
 // ==================================================
-// V/C UI STATE
+// Voltage / Current UI State
 // ==================================================
 
-// 0 = voltage minimum
-// 1 = voltage maximum
-// 2 = current minimum
-// 3 = current maximum
-// 4 = back
+// 0 = Voltage minimum
+// 1 = Voltage maximum
+// 2 = Current minimum
+// 3 = Current maximum
+// 4 = Back button
 
 static uint8_t vc_focus =
     0;
@@ -249,7 +223,7 @@ static bool vc_edit_mode =
     false;
 
 // ==================================================
-// LED STATE
+// LED State
 // ==================================================
 
 static uint32_t led_blink_color =
@@ -268,7 +242,7 @@ static ErrorType led_last_state =
     ERROR_NONE;
 
 // ==================================================
-// GUI CACHE
+// Main GUI Cache
 // ==================================================
 
 static float gui_last_voltage =
@@ -290,7 +264,7 @@ static ErrorType gui_last_error =
     ERROR_NONE;
 
 // ==================================================
-// V/C GUI CACHE
+// Voltage / Current GUI Cache
 // ==================================================
 
 static float gui_last_voltage_min =
@@ -306,14 +280,14 @@ static float gui_last_current_max =
     -1000.0f;
 
 // ==================================================
-// ERROR MESSAGE LABEL
+// Error Message Label
 // ==================================================
 
 static lv_obj_t *error_msg_label =
     NULL;
 
 // ==================================================
-// ERROR TEXT BLINK STATE
+// Error Text Blink State
 // ==================================================
 
 static uint32_t error_text_blink_timer =
@@ -323,14 +297,14 @@ static bool error_text_blink_state =
     true;
 
 // ==================================================
-// ERROR BOX COLOR CACHE
+// Error Box Appearance Cache
 // ==================================================
 
 static uint32_t error_box_last_color =
     0xFFFFFFFFUL;
 
 // ==================================================
-// FOCUS SCREEN CACHE
+// Focus Screen Cache
 // ==================================================
 
 static enum ScreensEnum last_focus_screen =
@@ -346,7 +320,7 @@ static bool last_vc_edit_state =
     false;
 
 // ==================================================
-// FORWARD DECLARATIONS
+// Forward Declarations
 // ==================================================
 
 static void update_led_state(void);
@@ -357,6 +331,7 @@ static void update_buzzer_gui(void);
 static void update_input_focus_gui(void);
 
 static ErrorType get_error_type(void);
+
 static bool main_screen_active(void);
 static bool vc_range_screen_active(void);
 static bool buzzer_screen_active(void);
@@ -381,7 +356,7 @@ static void handle_right_release(void);
 static void handle_select_release(void);
 
 // ==================================================
-// CHECK MAIN SCREEN
+// Screen State Helpers
 // ==================================================
 
 static bool main_screen_active(void)
@@ -394,19 +369,11 @@ static bool main_screen_active(void)
     return lv_scr_act() == objects.main;
 }
 
-// ==================================================
-// CHECK V/C RANGE SCREEN
-// ==================================================
-
 static bool vc_range_screen_active(void)
 {
     return screen_manager_get() ==
            SCREEN_ID_V_C_RANGE_SETTINGS;
 }
-
-// ==================================================
-// CHECK BUZZER SCREEN
-// ==================================================
 
 static bool buzzer_screen_active(void)
 {
@@ -415,16 +382,14 @@ static bool buzzer_screen_active(void)
 }
 
 // ==================================================
-// FIND BUZZER DROPDOWN
+// Buzzer Dropdown Helper
 // ==================================================
 
 static void buzzer_dropdown_find(void)
 {
     if (objects.buzzer_settings == NULL)
     {
-        buzzer_dropdown =
-            NULL;
-
+        buzzer_dropdown = NULL;
         return;
     }
 
@@ -436,26 +401,17 @@ static void buzzer_dropdown_find(void)
 }
 
 // ==================================================
-// INIT ERROR MSGBOX
+// Error Message Box Initialization
 // ==================================================
 
 static void init_error_msgbox(void)
 {
-    error_msg_label =
-        NULL;
+    error_msg_label = NULL;
 
     if (objects.error_box == NULL)
     {
-        Serial.println(
-            "ERROR MSGBOX INIT: NULL"
-        );
-
         return;
     }
-
-    // ==================================================
-    // GET CONTENT
-    // ==================================================
 
     lv_obj_t *content =
         lv_msgbox_get_content(
@@ -464,16 +420,8 @@ static void init_error_msgbox(void)
 
     if (content == NULL)
     {
-        Serial.println(
-            "ERROR MSGBOX INIT: CONTENT NULL"
-        );
-
         return;
     }
-
-    // ==================================================
-    // CREATE ONE LABEL
-    // ==================================================
 
     error_msg_label =
         lv_label_create(
@@ -482,43 +430,23 @@ static void init_error_msgbox(void)
 
     if (error_msg_label == NULL)
     {
-        Serial.println(
-            "ERROR MSGBOX INIT: LABEL NULL"
-        );
-
         return;
     }
-
-    // ==================================================
-    // INITIAL TEXT
-    // ==================================================
 
     lv_label_set_text(
         error_msg_label,
         ""
     );
 
-    // ==================================================
-    // LONG TEXT
-    // ==================================================
-
     lv_label_set_long_mode(
         error_msg_label,
         LV_LABEL_LONG_WRAP
     );
 
-    // ==================================================
-    // WIDTH
-    // ==================================================
-
     lv_obj_set_width(
         error_msg_label,
         LV_PCT(100)
     );
-
-    // ==================================================
-    // TEXT ALIGNMENT
-    // ==================================================
 
     lv_obj_set_style_text_align(
         error_msg_label,
@@ -527,10 +455,6 @@ static void init_error_msgbox(void)
         LV_STATE_DEFAULT
     );
 
-    // ==================================================
-    // INITIAL COLOR = WHITE
-    // ==================================================
-
     lv_obj_set_style_text_color(
         error_msg_label,
         lv_color_hex(0xFFFFFF),
@@ -538,18 +462,10 @@ static void init_error_msgbox(void)
         LV_STATE_DEFAULT
     );
 
-    // ==================================================
-    // VERTICAL POSITION
-    // ==================================================
-
     lv_obj_set_y(
         error_msg_label,
         40
     );
-
-    // ==================================================
-    // NO BORDER
-    // ==================================================
 
     lv_obj_set_style_border_width(
         error_msg_label,
@@ -558,10 +474,6 @@ static void init_error_msgbox(void)
         LV_STATE_DEFAULT
     );
 
-    // ==================================================
-    // NO BACKGROUND
-    // ==================================================
-
     lv_obj_set_style_bg_opa(
         error_msg_label,
         LV_OPA_TRANSP,
@@ -569,36 +481,20 @@ static void init_error_msgbox(void)
         LV_STATE_DEFAULT
     );
 
-    // ==================================================
-    // SHOW
-    // ==================================================
-
     lv_obj_clear_flag(
         error_msg_label,
         LV_OBJ_FLAG_HIDDEN
     );
-
-    // ==================================================
-    // RESET BLINK
-    // ==================================================
 
     error_text_blink_timer =
         millis();
 
     error_text_blink_state =
         true;
-
-    Serial.println(
-        "ERROR MSGBOX CONTENT = FOUND"
-    );
-
-    Serial.println(
-        "ERROR MSGBOX TEXT LABEL = CREATED"
-    );
 }
 
 // ==================================================
-// SET ERROR TEXT
+// Set Error Message Text
 // ==================================================
 
 static void set_error_text(
@@ -633,12 +529,8 @@ static void set_error_text(
 }
 
 // ==================================================
-// ERROR TEXT BLINK TASK
+// Error Text Blink Task
 // ==================================================
-//
-// All errors:
-// BLACK <-> WHITE
-//
 
 static void update_error_text_blink(void)
 {
@@ -699,7 +591,7 @@ static void update_error_text_blink(void)
 }
 
 // ==================================================
-// BUZZER SET MODE
+// Buzzer Mode Control
 // ==================================================
 
 void buzzer_set_mode(uint8_t mode)
@@ -712,19 +604,7 @@ void buzzer_set_mode(uint8_t mode)
 
     buzzer_mode =
         mode;
-
-    Serial.print(
-        "BUZZER MODE = "
-    );
-
-    Serial.println(
-        buzzer_mode + 1
-    );
 }
-
-// ==================================================
-// BUZZER GET MODE
-// ==================================================
 
 uint8_t buzzer_get_mode(void)
 {
@@ -732,7 +612,7 @@ uint8_t buzzer_get_mode(void)
 }
 
 // ==================================================
-// VOLTAGE MIN
+// Voltage Limit Setters
 // ==================================================
 
 void set_voltage_min_limit(float value)
@@ -751,20 +631,7 @@ void set_voltage_min_limit(float value)
 
     voltage_min_limit =
         value;
-
-    Serial.print(
-        "VOLTAGE MIN LIMIT = "
-    );
-
-    Serial.println(
-        voltage_min_limit,
-        1
-    );
 }
-
-// ==================================================
-// VOLTAGE MAX
-// ==================================================
 
 void set_voltage_max_limit(float value)
 {
@@ -782,29 +649,12 @@ void set_voltage_max_limit(float value)
 
     voltage_max_limit =
         value;
-
-    Serial.print(
-        "VOLTAGE MAX LIMIT = "
-    );
-
-    Serial.println(
-        voltage_max_limit,
-        1
-    );
 }
-
-// ==================================================
-// GET VOLTAGE MIN
-// ==================================================
 
 float get_voltage_min_limit(void)
 {
     return voltage_min_limit;
 }
-
-// ==================================================
-// GET VOLTAGE MAX
-// ==================================================
 
 float get_voltage_max_limit(void)
 {
@@ -812,7 +662,7 @@ float get_voltage_max_limit(void)
 }
 
 // ==================================================
-// CURRENT MIN
+// Current Limit Setters
 // ==================================================
 
 void set_current_min_limit(float value)
@@ -831,20 +681,7 @@ void set_current_min_limit(float value)
 
     current_min_limit =
         value;
-
-    Serial.print(
-        "CURRENT MIN LIMIT = "
-    );
-
-    Serial.println(
-        current_min_limit,
-        1
-    );
 }
-
-// ==================================================
-// CURRENT MAX
-// ==================================================
 
 void set_current_max_limit(float value)
 {
@@ -862,29 +699,12 @@ void set_current_max_limit(float value)
 
     current_max_limit =
         value;
-
-    Serial.print(
-        "CURRENT MAX LIMIT = "
-    );
-
-    Serial.println(
-        current_max_limit,
-        1
-    );
 }
-
-// ==================================================
-// GET CURRENT MIN
-// ==================================================
 
 float get_current_min_limit(void)
 {
     return current_min_limit;
 }
-
-// ==================================================
-// GET CURRENT MAX
-// ==================================================
 
 float get_current_max_limit(void)
 {
@@ -892,7 +712,7 @@ float get_current_max_limit(void)
 }
 
 // ==================================================
-// UPDATE V/C RANGE GUI
+// Update V/C Screen
 // ==================================================
 
 static void update_vc_range_gui(void)
@@ -902,9 +722,9 @@ static void update_vc_range_gui(void)
         return;
     }
 
-    // ==================================================
-    // VOLTAGE MIN
-    // ==================================================
+    // --------------------------------------------------
+    // Voltage minimum display
+    // --------------------------------------------------
 
     if (
         objects.voltage_min_value != NULL &&
@@ -930,9 +750,9 @@ static void update_vc_range_gui(void)
             voltage_min_limit;
     }
 
-    // ==================================================
-    // VOLTAGE MAX
-    // ==================================================
+    // --------------------------------------------------
+    // Voltage maximum display
+    // --------------------------------------------------
 
     if (
         objects.voltage_max_value != NULL &&
@@ -958,9 +778,9 @@ static void update_vc_range_gui(void)
             voltage_max_limit;
     }
 
-    // ==================================================
-    // CURRENT MIN
-    // ==================================================
+    // --------------------------------------------------
+    // Current minimum display
+    // --------------------------------------------------
 
     if (
         objects.current_min_value != NULL &&
@@ -986,9 +806,9 @@ static void update_vc_range_gui(void)
             current_min_limit;
     }
 
-    // ==================================================
-    // CURRENT MAX
-    // ==================================================
+    // --------------------------------------------------
+    // Current maximum display
+    // --------------------------------------------------
 
     if (
         objects.current_max_value != NULL &&
@@ -1014,13 +834,11 @@ static void update_vc_range_gui(void)
             current_max_limit;
     }
 
-    // ==================================================
-    // SYNC VOLTAGE MIN SLIDER
-    // ==================================================
+    // --------------------------------------------------
+    // Synchronize voltage minimum slider
+    // --------------------------------------------------
 
-    if (
-        objects.voltage_minimum != NULL
-    )
+    if (objects.voltage_minimum != NULL)
     {
         int32_t value =
             (int32_t)voltage_min_limit;
@@ -1046,13 +864,11 @@ static void update_vc_range_gui(void)
         }
     }
 
-    // ==================================================
-    // SYNC VOLTAGE MAX SLIDER
-    // ==================================================
+    // --------------------------------------------------
+    // Synchronize voltage maximum slider
+    // --------------------------------------------------
 
-    if (
-        objects.voltage_maximum != NULL
-    )
+    if (objects.voltage_maximum != NULL)
     {
         int32_t value =
             (int32_t)voltage_max_limit;
@@ -1078,13 +894,11 @@ static void update_vc_range_gui(void)
         }
     }
 
-    // ==================================================
-    // SYNC CURRENT MIN SLIDER
-    // ==================================================
+    // --------------------------------------------------
+    // Synchronize current minimum slider
+    // --------------------------------------------------
 
-    if (
-        objects.current_minimum != NULL
-    )
+    if (objects.current_minimum != NULL)
     {
         int32_t value =
             (int32_t)current_min_limit;
@@ -1110,13 +924,11 @@ static void update_vc_range_gui(void)
         }
     }
 
-    // ==================================================
-    // SYNC CURRENT MAX SLIDER
-    // ==================================================
+    // --------------------------------------------------
+    // Synchronize current maximum slider
+    // --------------------------------------------------
 
-    if (
-        objects.current_maximum != NULL
-    )
+    if (objects.current_maximum != NULL)
     {
         int32_t value =
             (int32_t)current_max_limit;
@@ -1144,7 +956,7 @@ static void update_vc_range_gui(void)
 }
 
 // ==================================================
-// UPDATE BUZZER GUI
+// Update Buzzer Screen
 // ==================================================
 
 static void update_buzzer_gui(void)
@@ -1174,9 +986,7 @@ static void update_buzzer_gui(void)
         uint8_t mode =
             buzzer_get_mode();
 
-        if (
-            selected != mode
-        )
+        if (selected != mode)
         {
             lv_dropdown_set_selected(
                 buzzer_dropdown,
@@ -1187,7 +997,7 @@ static void update_buzzer_gui(void)
 }
 
 // ==================================================
-// LED APPLY COLOR
+// LED Output
 // ==================================================
 
 static void led_apply_color(uint32_t color)
@@ -1214,7 +1024,7 @@ static void led_apply_color(uint32_t color)
 }
 
 // ==================================================
-// SET SOLID LED
+// Set Solid LED
 // ==================================================
 
 static void set_status_led(uint32_t color)
@@ -1237,7 +1047,7 @@ static void set_status_led(uint32_t color)
 }
 
 // ==================================================
-// SET BLINK LED
+// Set Blinking LED
 // ==================================================
 
 static void set_status_led_blink(uint32_t color)
@@ -1268,7 +1078,7 @@ static void set_status_led_blink(uint32_t color)
 }
 
 // ==================================================
-// LED TASK
+// LED Task
 // ==================================================
 
 static void led_task(void)
@@ -1321,7 +1131,7 @@ static void led_task(void)
 }
 
 // ==================================================
-// CLEAR SETTINGS HIGHLIGHT
+// Settings Focus
 // ==================================================
 
 static void clear_settings_highlight(void)
@@ -1367,10 +1177,6 @@ static void clear_settings_highlight(void)
     }
 }
 
-// ==================================================
-// APPLY SETTINGS HIGHLIGHT
-// ==================================================
-
 static void apply_settings_highlight(void)
 {
     clear_settings_highlight();
@@ -1381,35 +1187,26 @@ static void apply_settings_highlight(void)
     switch (settings_selection)
     {
         case SETTINGS_OPTION_BUZZER:
-
             selected =
                 objects.buzzer;
-
             break;
 
         case SETTINGS_OPTION_CALIBRATION:
-
             selected =
                 objects.touch_calibration;
-
             break;
 
         case SETTINGS_OPTION_VC_RANGE:
-
             selected =
                 objects.voltage_range;
-
             break;
 
         case SETTINGS_OPTION_BACK:
-
             selected =
                 objects.exit_settings;
-
             break;
 
         default:
-
             break;
     }
 
@@ -1434,7 +1231,7 @@ static void apply_settings_highlight(void)
 }
 
 // ==================================================
-// CLEAR BUZZER FOCUS
+// Buzzer Focus
 // ==================================================
 
 static void clear_buzzer_focus(void)
@@ -1463,10 +1260,6 @@ static void clear_buzzer_focus(void)
         );
     }
 }
-
-// ==================================================
-// APPLY BUZZER FOCUS
-// ==================================================
 
 static void apply_buzzer_focus(void)
 {
@@ -1526,7 +1319,7 @@ static void apply_buzzer_focus(void)
 }
 
 // ==================================================
-// GET V/C BACK BUTTON
+// V/C Focus
 // ==================================================
 
 static lv_obj_t *get_vc_back_button(void)
@@ -1542,10 +1335,6 @@ static lv_obj_t *get_vc_back_button(void)
         objects.exit_from_v_c_menu_button
     );
 }
-
-// ==================================================
-// CLEAR V/C FOCUS
-// ==================================================
 
 static void clear_vc_focus(void)
 {
@@ -1603,10 +1392,6 @@ static void clear_vc_focus(void)
     }
 }
 
-// ==================================================
-// APPLY V/C FOCUS
-// ==================================================
-
 static void apply_vc_focus(void)
 {
     if (!vc_range_screen_active())
@@ -1622,45 +1407,31 @@ static void apply_vc_focus(void)
     switch (vc_focus)
     {
         case 0:
-
             selected =
                 objects.voltage_minimum;
-
             break;
 
         case 1:
-
             selected =
                 objects.voltage_maximum;
-
             break;
 
         case 2:
-
             selected =
                 objects.current_minimum;
-
             break;
 
         case 3:
-
             selected =
                 objects.current_maximum;
-
             break;
 
         case 4:
-
             selected =
                 get_vc_back_button();
-
             break;
 
         default:
-
-            selected =
-                NULL;
-
             break;
     }
 
@@ -1685,17 +1456,13 @@ static void apply_vc_focus(void)
 }
 
 // ==================================================
-// UPDATE INPUT FOCUS GUI
+// Update Input Focus
 // ==================================================
 
 static void update_input_focus_gui(void)
 {
     enum ScreensEnum current_screen =
         screen_manager_get();
-
-    // ==================================================
-    // SCREEN CHANGED
-    // ==================================================
 
     if (
         current_screen !=
@@ -1755,10 +1522,6 @@ static void update_input_focus_gui(void)
             false;
     }
 
-    // ==================================================
-    // BUZZER FOCUS CHANGE
-    // ==================================================
-
     if (
         current_screen ==
         SCREEN_ID_BUZZER_SETTINGS
@@ -1778,17 +1541,11 @@ static void update_input_focus_gui(void)
                 focus_state;
         }
 
-        if (
-            buzzer_dropdown_open
-        )
+        if (buzzer_dropdown_open)
         {
             apply_buzzer_focus();
         }
     }
-
-    // ==================================================
-    // V/C FOCUS CHANGE
-    // ==================================================
 
     if (
         current_screen ==
@@ -1814,7 +1571,7 @@ static void update_input_focus_gui(void)
 }
 
 // ==================================================
-// BUZZER DROPDOWN CHANGE
+// Buzzer Dropdown Navigation
 // ==================================================
 
 static void buzzer_dropdown_change(
@@ -1841,8 +1598,7 @@ static void buzzer_dropdown_change(
         }
         else
         {
-            selected =
-                0;
+            selected = 0;
         }
     }
     else
@@ -1853,8 +1609,7 @@ static void buzzer_dropdown_change(
         }
         else
         {
-            selected =
-                2;
+            selected = 2;
         }
     }
 
@@ -1866,24 +1621,11 @@ static void buzzer_dropdown_change(
     set_var_buzzer_mode(
         (int32_t)selected
     );
-
-    Serial.print(
-        "BUZZER SELECTED MODE = "
-    );
-
-    Serial.println(
-        selected + 1
-    );
 }
 
 // ==================================================
-// V/C CHANGE VALUE
+// V/C Value Change
 // ==================================================
-//
-// Only INCREASE.
-// Voltage: 30 -> 0
-// Current: 3 -> 0
-//
 
 static void vc_change_value(void)
 {
@@ -1892,17 +1634,16 @@ static void vc_change_value(void)
         return;
     }
 
-    // ==================================================
-    // VOLTAGE MIN
-    // ==================================================
+    // --------------------------------------------------
+    // Voltage minimum
+    // --------------------------------------------------
 
     if (vc_focus == 0)
     {
         float value =
             get_voltage_min_limit();
 
-        value +=
-            1.0f;
+        value += 1.0f;
 
         if (
             value >
@@ -1918,17 +1659,16 @@ static void vc_change_value(void)
         );
     }
 
-    // ==================================================
-    // VOLTAGE MAX
-    // ==================================================
+    // --------------------------------------------------
+    // Voltage maximum
+    // --------------------------------------------------
 
     else if (vc_focus == 1)
     {
         float value =
             get_voltage_max_limit();
 
-        value +=
-            1.0f;
+        value += 1.0f;
 
         if (
             value >
@@ -1944,17 +1684,16 @@ static void vc_change_value(void)
         );
     }
 
-    // ==================================================
-    // CURRENT MIN
-    // ==================================================
+    // --------------------------------------------------
+    // Current minimum
+    // --------------------------------------------------
 
     else if (vc_focus == 2)
     {
         float value =
             get_current_min_limit();
 
-        value +=
-            1.0f;
+        value += 1.0f;
 
         if (
             value >
@@ -1970,17 +1709,16 @@ static void vc_change_value(void)
         );
     }
 
-    // ==================================================
-    // CURRENT MAX
-    // ==================================================
+    // --------------------------------------------------
+    // Current maximum
+    // --------------------------------------------------
 
     else if (vc_focus == 3)
     {
         float value =
             get_current_max_limit();
 
-        value +=
-            1.0f;
+        value += 1.0f;
 
         if (
             value >
@@ -2002,7 +1740,7 @@ static void vc_change_value(void)
 }
 
 // ==================================================
-// HANDLE RIGHT RELEASE
+// Handle RIGHT Button Release
 // ==================================================
 
 static void handle_right_release(void)
@@ -2010,13 +1748,9 @@ static void handle_right_release(void)
     enum ScreensEnum screen =
         screen_manager_get();
 
-    Serial.println(
-        "BUTTON: RIGHT RELEASE"
-    );
-
-    // ==================================================
-    // MAIN
-    // ==================================================
+    // --------------------------------------------------
+    // Main screen
+    // --------------------------------------------------
 
     if (
         screen ==
@@ -2029,9 +1763,9 @@ static void handle_right_release(void)
         return;
     }
 
-    // ==================================================
-    // SETTINGS
-    // ==================================================
+    // --------------------------------------------------
+    // Settings screen
+    // --------------------------------------------------
 
     if (
         screen ==
@@ -2054,22 +1788,16 @@ static void handle_right_release(void)
         return;
     }
 
-    // ==================================================
-    // BUZZER
-    // ==================================================
+    // --------------------------------------------------
+    // Buzzer screen
+    // --------------------------------------------------
 
     if (
         screen ==
         SCREEN_ID_BUZZER_SETTINGS
     )
     {
-        // ----------------------------------------------
-        // DROPDOWN OPEN
-        // ----------------------------------------------
-
-        if (
-            buzzer_dropdown_open
-        )
+        if (buzzer_dropdown_open)
         {
             buzzer_dropdown_change(
                 1
@@ -2077,10 +1805,6 @@ static void handle_right_release(void)
 
             return;
         }
-
-        // ----------------------------------------------
-        // NORMAL NAVIGATION
-        // ----------------------------------------------
 
         if (!buzzer_focus_back)
         {
@@ -2098,29 +1822,21 @@ static void handle_right_release(void)
         return;
     }
 
-    // ==================================================
-    // V/C RANGE
-    // ==================================================
+    // --------------------------------------------------
+    // V/C screen
+    // --------------------------------------------------
 
     if (
         screen ==
         SCREEN_ID_V_C_RANGE_SETTINGS
     )
     {
-        // ----------------------------------------------
-        // EDIT MODE
-        // ----------------------------------------------
-
         if (vc_edit_mode)
         {
             vc_change_value();
 
             return;
         }
-
-        // ----------------------------------------------
-        // NORMAL NAVIGATION
-        // ----------------------------------------------
 
         vc_focus++;
 
@@ -2137,7 +1853,7 @@ static void handle_right_release(void)
 }
 
 // ==================================================
-// HANDLE SELECT RELEASE
+// Handle SELECT Button Release
 // ==================================================
 
 static void handle_select_release(void)
@@ -2145,13 +1861,9 @@ static void handle_select_release(void)
     enum ScreensEnum screen =
         screen_manager_get();
 
-    Serial.println(
-        "BUTTON: SELECT RELEASE"
-    );
-
-    // ==================================================
-    // MAIN
-    // ==================================================
+    // --------------------------------------------------
+    // Main screen
+    // --------------------------------------------------
 
     if (
         screen ==
@@ -2171,24 +1883,18 @@ static void handle_select_release(void)
         return;
     }
 
-    // ==================================================
-    // SETTINGS
-    // ==================================================
+    // --------------------------------------------------
+    // Settings screen
+    // --------------------------------------------------
 
     if (
         screen ==
         SCREEN_ID_SETTINGS_PAGE
     )
     {
-        switch (
-            settings_selection
-        )
+        switch (settings_selection)
         {
             case SETTINGS_OPTION_BUZZER:
-
-                Serial.println(
-                    "ACTION: SETTINGS -> BUZZER"
-                );
 
                 action_go_to_buzzer_settings(
                     NULL
@@ -2198,10 +1904,6 @@ static void handle_select_release(void)
 
             case SETTINGS_OPTION_CALIBRATION:
 
-                Serial.println(
-                    "ACTION: SETTINGS -> CALIBRATION"
-                );
-
                 action_go_to_touch_calibration(
                     NULL
                 );
@@ -2210,10 +1912,6 @@ static void handle_select_release(void)
 
             case SETTINGS_OPTION_VC_RANGE:
 
-                Serial.println(
-                    "ACTION: SETTINGS -> V/C RANGE"
-                );
-
                 action_go_to_v_c_range_settings(
                     NULL
                 );
@@ -2221,10 +1919,6 @@ static void handle_select_release(void)
                 break;
 
             case SETTINGS_OPTION_BACK:
-
-                Serial.println(
-                    "ACTION: SETTINGS -> MAIN"
-                );
 
                 action_exit_to_main_page(
                     NULL
@@ -2240,9 +1934,9 @@ static void handle_select_release(void)
         return;
     }
 
-    // ==================================================
-    // BUZZER
-    // ==================================================
+    // --------------------------------------------------
+    // Buzzer screen
+    // --------------------------------------------------
 
     if (
         screen ==
@@ -2250,10 +1944,6 @@ static void handle_select_release(void)
     )
     {
         buzzer_dropdown_find();
-
-        // ----------------------------------------------
-        // DROPDOWN
-        // ----------------------------------------------
 
         if (!buzzer_focus_back)
         {
@@ -2272,10 +1962,6 @@ static void handle_select_release(void)
                 );
 
                 apply_buzzer_focus();
-
-                Serial.println(
-                    "BUZZER DROPDOWN = OPEN"
-                );
             }
             else
             {
@@ -2294,26 +1980,10 @@ static void handle_select_release(void)
                 );
 
                 apply_buzzer_focus();
-
-                Serial.print(
-                    "BUZZER MODE CONFIRMED = "
-                );
-
-                Serial.println(
-                    buzzer_get_mode() + 1
-                );
             }
 
             return;
         }
-
-        // ----------------------------------------------
-        // BACK
-        // ----------------------------------------------
-
-        Serial.println(
-            "ACTION: BUZZER -> SETTINGS"
-        );
 
         action_go_from_buzzer_settings_page_to_settings_page(
             NULL
@@ -2322,27 +1992,19 @@ static void handle_select_release(void)
         return;
     }
 
-    // ==================================================
-    // V/C RANGE
-    // ==================================================
+    // --------------------------------------------------
+    // V/C screen
+    // --------------------------------------------------
 
     if (
         screen ==
         SCREEN_ID_V_C_RANGE_SETTINGS
     )
     {
-        // ----------------------------------------------
-        // BACK
-        // ----------------------------------------------
-
         if (vc_focus == 4)
         {
             if (!vc_edit_mode)
             {
-                Serial.println(
-                    "ACTION: V/C RANGE -> SETTINGS"
-                );
-
                 action_exit_from_v_c_menu_to_settings(
                     NULL
                 );
@@ -2351,42 +2013,17 @@ static void handle_select_release(void)
             return;
         }
 
-        // ----------------------------------------------
-        // ENTER / EXIT EDIT
-        // ----------------------------------------------
-
         vc_edit_mode =
             !vc_edit_mode;
 
         apply_vc_focus();
-
-        if (vc_edit_mode)
-        {
-            Serial.print(
-                "V/C EDIT START -> "
-            );
-
-            Serial.println(
-                vc_focus
-            );
-        }
-        else
-        {
-            Serial.print(
-                "V/C EDIT END -> "
-            );
-
-            Serial.println(
-                vc_focus
-            );
-        }
 
         return;
     }
 }
 
 // ==================================================
-// BUTTONS TASK
+// Button Task
 // ==================================================
 
 static void buttons_task(void)
@@ -2404,9 +2041,9 @@ static void buttons_task(void)
     uint32_t now =
         millis();
 
-    // ==================================================
-    // RIGHT BUTTON
-    // ==================================================
+    // --------------------------------------------------
+    // RIGHT button
+    // --------------------------------------------------
 
     if (
         right_state !=
@@ -2424,36 +2061,19 @@ static void buttons_task(void)
             right_last_state =
                 right_state;
 
-            // ------------------------------------------
-            // PRESS
-            // ------------------------------------------
-
+            // Only act on release
             if (
-                right_state == LOW
+                right_state == HIGH
             )
-            {
-                right_press_start =
-                    now;
-
-                Serial.println(
-                    "BUTTON: RIGHT PRESS"
-                );
-            }
-
-            // ------------------------------------------
-            // RELEASE
-            // ------------------------------------------
-
-            else
             {
                 handle_right_release();
             }
         }
     }
 
-    // ==================================================
-    // SELECT BUTTON
-    // ==================================================
+    // --------------------------------------------------
+    // SELECT button
+    // --------------------------------------------------
 
     if (
         select_state !=
@@ -2471,27 +2091,10 @@ static void buttons_task(void)
             select_last_state =
                 select_state;
 
-            // ------------------------------------------
-            // PRESS
-            // ------------------------------------------
-
+            // Only act on release
             if (
-                select_state == LOW
+                select_state == HIGH
             )
-            {
-                select_press_start =
-                    now;
-
-                Serial.println(
-                    "BUTTON: SELECT PRESS"
-                );
-            }
-
-            // ------------------------------------------
-            // RELEASE
-            // ------------------------------------------
-
-            else
             {
                 handle_select_release();
             }
@@ -2500,7 +2103,7 @@ static void buttons_task(void)
 }
 
 // ==================================================
-// UART TASK
+// UART Task
 // ==================================================
 
 static void uart_task(void)
@@ -2544,7 +2147,7 @@ static void uart_task(void)
 }
 
 // ==================================================
-// SAFETY TASK
+// Safety Task
 // ==================================================
 
 static void safety_task(void)
@@ -2552,9 +2155,9 @@ static void safety_task(void)
     uint32_t now =
         millis();
 
-    // ==================================================
-    // UART CONNECTION
-    // ==================================================
+    // --------------------------------------------------
+    // UART connection state
+    // --------------------------------------------------
 
     if (!valid_uart_received_once)
     {
@@ -2593,9 +2196,9 @@ static void safety_task(void)
             false;
     }
 
-    // ==================================================
-    // VOLTAGE
-    // ==================================================
+    // --------------------------------------------------
+    // Voltage validation
+    // --------------------------------------------------
 
     system_state.voltage_ok =
         (
@@ -2608,9 +2211,9 @@ static void safety_task(void)
             voltage_max_limit
         );
 
-    // ==================================================
-    // CURRENT
-    // ==================================================
+    // --------------------------------------------------
+    // Current validation
+    // --------------------------------------------------
 
     system_state.current_ok =
         (
@@ -2623,9 +2226,9 @@ static void safety_task(void)
             current_max_limit
         );
 
-    // ==================================================
-    // LOW VOLTAGE
-    // ==================================================
+    // --------------------------------------------------
+    // Low voltage detection
+    // --------------------------------------------------
 
     system_state.low_voltage =
         (
@@ -2633,9 +2236,9 @@ static void safety_task(void)
             voltage_min_limit
         );
 
-    // ==================================================
-    // SYSTEM OK
-    // ==================================================
+    // --------------------------------------------------
+    // Overall system state
+    // --------------------------------------------------
 
     system_state.system_ok =
         system_state.data_received &&
@@ -2645,7 +2248,7 @@ static void safety_task(void)
 }
 
 // ==================================================
-// BUZZER TASK
+// Buzzer Task
 // ==================================================
 
 static void buzzer_task(void)
@@ -2689,6 +2292,10 @@ static void buzzer_task(void)
     uint32_t interval =
         0;
 
+    // --------------------------------------------------
+    // Mode 1
+    // --------------------------------------------------
+
     if (
         buzzer_mode ==
         BUZZER_MODE_1
@@ -2699,6 +2306,11 @@ static void buzzer_task(void)
             200 :
             700;
     }
+
+    // --------------------------------------------------
+    // Mode 2
+    // --------------------------------------------------
+
     else if (
         buzzer_mode ==
         BUZZER_MODE_2
@@ -2707,6 +2319,11 @@ static void buzzer_task(void)
         interval =
             100;
     }
+
+    // --------------------------------------------------
+    // Mode 3
+    // --------------------------------------------------
+
     else
     {
         interval =
@@ -2760,7 +2377,7 @@ static void buzzer_task(void)
 }
 
 // ==================================================
-// GET ERROR TYPE
+// Determine Current Error
 // ==================================================
 
 static ErrorType get_error_type(void)
@@ -2809,7 +2426,7 @@ static ErrorType get_error_type(void)
 }
 
 // ==================================================
-// UPDATE ERROR BOX
+// Error Message Box Update
 // ==================================================
 
 static void update_error_box(void)
@@ -2832,9 +2449,9 @@ static void update_error_box(void)
     ErrorType error =
         get_error_type();
 
-    // ==================================================
-    // NO ERROR
-    // ==================================================
+    // --------------------------------------------------
+    // No error
+    // --------------------------------------------------
 
     if (
         error ==
@@ -2846,10 +2463,6 @@ static void update_error_box(void)
             ERROR_NONE
         )
         {
-            Serial.println(
-                "ERROR MSGBOX: HIDE"
-            );
-
             lv_obj_add_flag(
                 objects.error_box,
                 LV_OBJ_FLAG_HIDDEN
@@ -2872,9 +2485,9 @@ static void update_error_box(void)
         return;
     }
 
-    // ==================================================
-    // SAME ERROR
-    // ==================================================
+    // --------------------------------------------------
+    // Ignore unchanged error
+    // --------------------------------------------------
 
     if (
         error ==
@@ -2884,15 +2497,15 @@ static void update_error_box(void)
         return;
     }
 
-    // ==================================================
-    // ERROR MESSAGE
-    // ==================================================
-
     const char *message =
         "";
 
     uint32_t color =
         LED_RED;
+
+    // --------------------------------------------------
+    // Select error message and box color
+    // --------------------------------------------------
 
     switch (error)
     {
@@ -2954,40 +2567,26 @@ static void update_error_box(void)
             break;
     }
 
-    // ==================================================
-    // LOG
-    // ==================================================
-
-    Serial.print(
-        "ERROR MSGBOX UPDATE: "
-    );
-
-    Serial.println(
-        message
-    );
-
-    // ==================================================
-    // SET TEXT
-    // ==================================================
+    // --------------------------------------------------
+    // Update error text
+    // --------------------------------------------------
 
     set_error_text(
         message
     );
 
-    // ==================================================
-    // INITIAL ERROR TEXT COLOR
-    // ==================================================
-
     lv_obj_set_style_text_color(
         error_msg_label,
-        lv_color_hex(0xFFFFFF),
+        lv_color_hex(
+            0xFFFFFF
+        ),
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
 
-    // ==================================================
-    // ERROR BOX COLOR
-    // ==================================================
+    // --------------------------------------------------
+    // Update box color only when necessary
+    // --------------------------------------------------
 
     if (
         error_box_last_color !=
@@ -2996,9 +2595,7 @@ static void update_error_box(void)
     {
         lv_obj_set_style_bg_color(
             objects.error_box,
-            lv_color_hex(
-                color
-            ),
+            lv_color_hex(color),
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
@@ -3014,27 +2611,19 @@ static void update_error_box(void)
             color;
     }
 
-    // ==================================================
-    // SHOW MSGBOX
-    // ==================================================
+    // --------------------------------------------------
+    // Show error box
+    // --------------------------------------------------
 
     lv_obj_clear_flag(
         objects.error_box,
         LV_OBJ_FLAG_HIDDEN
     );
 
-    // ==================================================
-    // SHOW TEXT
-    // ==================================================
-
     lv_obj_clear_flag(
         error_msg_label,
         LV_OBJ_FLAG_HIDDEN
     );
-
-    // ==================================================
-    // SEPARATE EEZ LABEL MUST STAY HIDDEN
-    // ==================================================
 
     if (
         objects.error_label != NULL
@@ -3046,9 +2635,9 @@ static void update_error_box(void)
         );
     }
 
-    // ==================================================
-    // RESET BLINK
-    // ==================================================
+    // --------------------------------------------------
+    // Restart text blinking
+    // --------------------------------------------------
 
     error_text_blink_timer =
         millis();
@@ -3056,30 +2645,23 @@ static void update_error_box(void)
     error_text_blink_state =
         true;
 
-    // ==================================================
-    // SAVE ERROR
-    // ==================================================
-
     gui_last_error =
         error;
 }
 
 // ==================================================
-// GUI UPDATE
+// GUI Update
 // ==================================================
 
 static void gui_update(void)
 {
-    // ==================================================
-    // MAIN
-    // ==================================================
+    // --------------------------------------------------
+    // Main screen data
+    // --------------------------------------------------
 
     if (main_screen_active())
     {
-        // ==================================================
-        // VOLTAGE
-        // ==================================================
-
+        // Voltage display
         if (
             objects.voltage != NULL &&
             system_state.voltage !=
@@ -3104,10 +2686,7 @@ static void gui_update(void)
                 system_state.voltage;
         }
 
-        // ==================================================
-        // CURRENT
-        // ==================================================
-
+        // Current display
         if (
             objects.current != NULL &&
             system_state.current !=
@@ -3132,40 +2711,21 @@ static void gui_update(void)
                 system_state.current;
         }
 
-        // ==================================================
-        // ERROR MSGBOX
-        // ==================================================
-
         update_error_box();
-
-        // ==================================================
-        // ERROR TEXT BLINK
-        // ==================================================
-
         update_error_text_blink();
     }
 
-    // ==================================================
-    // V/C RANGE
-    // ==================================================
+    // --------------------------------------------------
+    // Settings screens
+    // --------------------------------------------------
 
     update_vc_range_gui();
-
-    // ==================================================
-    // BUZZER
-    // ==================================================
-
     update_buzzer_gui();
-
-    // ==================================================
-    // INPUT FOCUS
-    // ==================================================
-
     update_input_focus_gui();
 }
 
 // ==================================================
-// GUI TASK
+// GUI Task
 // ==================================================
 
 static void gui_task(void)
@@ -3188,9 +2748,10 @@ static void gui_task(void)
         now;
 
     gui_update();
-
     update_led_state();
 
+    // Keep EEZ screen tick synchronized with
+    // the screen manager.
     if (!vc_range_screen_active())
     {
         int16_t screen_index =
@@ -3210,7 +2771,7 @@ static void gui_task(void)
 }
 
 // ==================================================
-// UPDATE LED STATE
+// Update LED State
 // ==================================================
 
 static void update_led_state(void)
@@ -3234,10 +2795,7 @@ static void update_led_state(void)
     led_last_state =
         error;
 
-    // ==================================================
-    // CONNECTION LOST
-    // ==================================================
-
+    // Connection lost
     if (
         error ==
         ERROR_CONNECTION
@@ -3250,10 +2808,7 @@ static void update_led_state(void)
         return;
     }
 
-    // ==================================================
-    // NO DATA
-    // ==================================================
-
+    // No valid data
     if (
         !system_state.data_received
     )
@@ -3265,10 +2820,7 @@ static void update_led_state(void)
         return;
     }
 
-    // ==================================================
-    // OK
-    // ==================================================
-
+    // System is healthy
     if (
         error ==
         ERROR_NONE
@@ -3281,24 +2833,21 @@ static void update_led_state(void)
         return;
     }
 
-    // ==================================================
-    // ERROR
-    // ==================================================
-
+    // Voltage or current fault
     set_status_led_blink(
         LED_RED
     );
 }
 
 // ==================================================
-// TASK INIT
+// Task System Initialization
 // ==================================================
 
 void tasks_init(void)
 {
-    // ==================================================
-    // BUTTONS
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize hardware inputs
+    // --------------------------------------------------
 
     pinMode(
         BTN_RIGHT,
@@ -3310,9 +2859,9 @@ void tasks_init(void)
         INPUT_PULLUP
     );
 
-    // ==================================================
-    // BUZZER
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize buzzer
+    // --------------------------------------------------
 
     pinMode(
         BUZZER_PIN,
@@ -3323,9 +2872,9 @@ void tasks_init(void)
         BUZZER_PIN
     );
 
-    // ==================================================
-    // INITIAL BUTTON STATE
-    // ==================================================
+    // --------------------------------------------------
+    // Read initial button states
+    // --------------------------------------------------
 
     right_last_state =
         digitalRead(
@@ -3343,15 +2892,9 @@ void tasks_init(void)
     select_last_change =
         millis();
 
-    right_press_start =
-        millis();
-
-    select_press_start =
-        millis();
-
-    // ==================================================
-    // TIMERS
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize timers
+    // --------------------------------------------------
 
     buzzer_timer =
         millis();
@@ -3365,9 +2908,9 @@ void tasks_init(void)
     error_text_blink_state =
         true;
 
-    // ==================================================
-    // BUZZER DROPDOWN
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize buzzer dropdown
+    // --------------------------------------------------
 
     buzzer_dropdown_find();
 
@@ -3377,25 +2920,13 @@ void tasks_init(void)
             buzzer_dropdown,
             buzzer_get_mode()
         );
-
-        Serial.println(
-            "BUZZER DROPDOWN = FOUND"
-        );
-    }
-    else
-    {
-        Serial.println(
-            "BUZZER DROPDOWN = NULL"
-        );
     }
 
-    // ==================================================
-    // LED
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize status LED
+    // --------------------------------------------------
 
-    if (
-        objects.obj0 != NULL
-    )
+    if (objects.obj0 != NULL)
     {
         lv_led_set_color(
             objects.obj0,
@@ -3408,38 +2939,18 @@ void tasks_init(void)
             objects.obj0,
             255
         );
-
-        Serial.println(
-            "LED OBJECT = EEZ LV_LED"
-        );
-    }
-    else
-    {
-        Serial.println(
-            "LED OBJECT = NULL"
-        );
     }
 
-    // ==================================================
-    // ERROR MSGBOX
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize error message box
+    // --------------------------------------------------
 
-    if (
-        objects.error_box != NULL
-    )
+    if (objects.error_box != NULL)
     {
-        // ----------------------------------------------
-        // Hide initially
-        // ----------------------------------------------
-
         lv_obj_add_flag(
             objects.error_box,
             LV_OBJ_FLAG_HIDDEN
         );
-
-        // ----------------------------------------------
-        // Default color = RED
-        // ----------------------------------------------
 
         lv_obj_set_style_bg_color(
             objects.error_box,
@@ -3449,10 +2960,6 @@ void tasks_init(void)
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
-
-        // ----------------------------------------------
-        // Semi-transparent
-        // ----------------------------------------------
 
         lv_obj_set_style_bg_opa(
             objects.error_box,
@@ -3464,64 +2971,26 @@ void tasks_init(void)
         error_box_last_color =
             LED_RED;
 
-        // ----------------------------------------------
-        // Create actual text label
-        // ----------------------------------------------
-
         init_error_msgbox();
-
-        Serial.println(
-            "ERROR BOX = EEZ LV_MSGBOX"
-        );
-
-        Serial.println(
-            "ERROR BOX OPACITY = 60%"
-        );
-
-        Serial.println(
-            "ERROR TEXT = BLACK/WHITE BLINK"
-        );
-    }
-    else
-    {
-        Serial.println(
-            "ERROR BOX = NULL"
-        );
     }
 
-    // ==================================================
-    // SEPARATE EEZ ERROR LABEL
-    // ==================================================
+    // --------------------------------------------------
+    // Hide unused EEZ error label
+    // --------------------------------------------------
 
-    if (
-        objects.error_label != NULL
-    )
+    if (objects.error_label != NULL)
     {
         lv_obj_add_flag(
             objects.error_label,
             LV_OBJ_FLAG_HIDDEN
         );
-
-        Serial.println(
-            "ERROR LABEL = UNUSED"
-        );
-    }
-    else
-    {
-        Serial.println(
-            "ERROR LABEL = NULL"
-        );
     }
 
-    // ==================================================
-    // SETTINGS HIGHLIGHT
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize menu focus
+    // --------------------------------------------------
 
     apply_settings_highlight();
-
-    // ==================================================
-    // INITIAL BUZZER FOCUS
-    // ==================================================
 
     buzzer_focus_back =
         false;
@@ -3529,19 +2998,15 @@ void tasks_init(void)
     buzzer_dropdown_open =
         false;
 
-    // ==================================================
-    // INITIAL V/C FOCUS
-    // ==================================================
-
     vc_focus =
         0;
 
     vc_edit_mode =
         false;
 
-    // ==================================================
-    // V/C CACHE
-    // ==================================================
+    // --------------------------------------------------
+    // Reset GUI caches
+    // --------------------------------------------------
 
     gui_last_voltage_min =
         -1000.0f;
@@ -3554,10 +3019,6 @@ void tasks_init(void)
 
     gui_last_current_max =
         -1000.0f;
-
-    // ==================================================
-    // MAIN CACHE
-    // ==================================================
 
     gui_last_voltage =
         -1000.0f;
@@ -3577,10 +3038,6 @@ void tasks_init(void)
     gui_last_error =
         ERROR_NONE;
 
-    // ==================================================
-    // FOCUS CACHE
-    // ==================================================
-
     last_focus_screen =
         SCREEN_ID_MAIN;
 
@@ -3593,177 +3050,34 @@ void tasks_init(void)
     last_vc_edit_state =
         false;
 
-    // ==================================================
-    // LED CACHE
-    // ==================================================
-
     led_last_state =
         ERROR_NONE;
-
-    // ==================================================
-    // LOG
-    // ==================================================
-
-    Serial.println();
-
-    Serial.println(
-        "=============================="
-    );
-
-    Serial.println(
-        "TASK SYSTEM INITIALIZED"
-    );
-
-    Serial.println(
-        "RIGHT  = D1"
-    );
-
-    Serial.println(
-        "SELECT = D4"
-    );
-
-    Serial.println(
-        "BUTTON ACTION = RELEASE ONLY"
-    );
-
-    Serial.println(
-        "V/C EDIT = INCREASE ONLY"
-    );
-
-    Serial.println(
-        "V/C WRAP = END -> ZERO"
-    );
-
-    Serial.println(
-        "FOCUS COLOR = RED"
-    );
-
-    Serial.println(
-        "BUZZER = D0"
-    );
-
-    Serial.println(
-        "BUZZER MODE 1 = SINGLE BEEP"
-    );
-
-    Serial.println(
-        "BUZZER MODE 2 = DOUBLE BEEP"
-    );
-
-    Serial.println(
-        "BUZZER MODE 3 = LONG BEEP"
-    );
-
-    Serial.println(
-        "WATCHDOG = ENABLED"
-    );
-
-    Serial.println(
-        "LED = EEZ GENERATED LV_LED"
-    );
-
-    Serial.println(
-        "ERROR BOX = EEZ GENERATED LV_MSGBOX"
-    );
-
-    Serial.println(
-        "ERROR MSG = CHILD OF MSGBOX CONTENT"
-    );
-
-    Serial.println(
-        "ERROR TEXT = BLACK/WHITE BLINK"
-    );
-
-    Serial.println(
-        "ERROR LABEL = UNUSED"
-    );
-
-    Serial.println(
-        "ERROR CONNECTION = ORANGE"
-    );
-
-    Serial.println(
-        "ERROR VOLTAGE/CURRENT = RED"
-    );
-
-    Serial.println(
-        "ERROR BOX OPACITY = 60%"
-    );
-
-    Serial.println(
-        "V/C RANGE GUI UPDATE = TASKS"
-    );
-
-    Serial.println(
-        "GUI LABEL UPDATE = CHANGE ONLY"
-    );
-
-    Serial.println(
-        "EEZ TICK = DIRECT CURRENT SCREEN"
-    );
-
-    Serial.println(
-        "BUZZER DROPDOWN = EEZ OBJECT"
-    );
-
-    Serial.println(
-        "V/C FOCUS = HARDWARE BUTTON"
-    );
-
-    Serial.println(
-        "V/C MIN/MAX = INDEPENDENT"
-    );
-
-    Serial.println(
-        "=============================="
-    );
 }
 
 // ==================================================
-// TASK RUN
+// Task Scheduler
 // ==================================================
 
 void tasks_run(void)
 {
-    // ==================================================
-    // 1. BUTTONS
-    // ==================================================
-
+    // Read physical buttons
     buttons_task();
 
-    // ==================================================
-    // 2. UART
-    // ==================================================
-
+    // Receive UART data
     uart_task();
 
-    // ==================================================
-    // 3. SAFETY
-    // ==================================================
-
+    // Validate system conditions
     safety_task();
 
-    // ==================================================
-    // 4. BUZZER
-    // ==================================================
-
+    // Control buzzer output
     buzzer_task();
 
-    // ==================================================
-    // 5. SCREEN MANAGER
-    // ==================================================
-
+    // Apply pending screen changes
     screen_manager_process();
 
-    // ==================================================
-    // 6. GUI
-    // ==================================================
-
+    // Update user interface
     gui_task();
 
-    // ==================================================
-    // 7. LED
-    // ==================================================
-
+    // Update status LED
     led_task();
 }

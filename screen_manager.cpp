@@ -9,7 +9,7 @@ extern "C"
 }
 
 // ==================================================
-// SCREEN STATE
+// Screen Manager State
 // ==================================================
 
 static enum ScreensEnum current_screen =
@@ -21,15 +21,11 @@ static enum ScreensEnum pending_screen =
 static bool screen_change_pending =
     false;
 
-// ==================================================
-// RELOAD STATE
-// ==================================================
-
 static bool screen_reload_pending =
     false;
 
 // ==================================================
-// GET SCREEN OBJECT
+// Get LVGL Object for Screen
 // ==================================================
 
 static lv_obj_t *get_screen_object(
@@ -56,39 +52,7 @@ static lv_obj_t *get_screen_object(
 }
 
 // ==================================================
-// PRINT SCREEN NAME
-// ==================================================
-
-static void print_screen_name(
-    enum ScreensEnum screen
-)
-{
-    switch (screen)
-    {
-        case SCREEN_ID_MAIN:
-            Serial.print("MAIN");
-            break;
-
-        case SCREEN_ID_SETTINGS_PAGE:
-            Serial.print("SETTINGS");
-            break;
-
-        case SCREEN_ID_BUZZER_SETTINGS:
-            Serial.print("BUZZER");
-            break;
-
-        case SCREEN_ID_V_C_RANGE_SETTINGS:
-            Serial.print("V/C RANGE");
-            break;
-
-        default:
-            Serial.print("UNKNOWN");
-            break;
-    }
-}
-
-// ==================================================
-// LOAD SCREEN NOW
+// Load Screen Immediately
 // ==================================================
 
 static void load_screen_now(
@@ -96,69 +60,33 @@ static void load_screen_now(
 )
 {
     lv_obj_t *screen_obj =
-        get_screen_object(screen);
+        get_screen_object(
+            screen
+        );
 
     if (screen_obj == NULL)
     {
-        Serial.println(
-            "SCREEN ERROR: OBJECT NULL"
-        );
-
         return;
     }
-
-    Serial.println(
-        "SCREEN APPLY START"
-    );
-
-    // --------------------------------------------------
-    // Load screen
-    // --------------------------------------------------
 
     lv_scr_load(
         screen_obj
     );
 
-    // --------------------------------------------------
-    // Force complete screen invalidation
-    // --------------------------------------------------
-
     lv_obj_invalidate(
         screen_obj
     );
-
-    // --------------------------------------------------
-    // Force immediate refresh
-    // --------------------------------------------------
 
     lv_refr_now(
         lv_disp_get_default()
     );
 
-    // --------------------------------------------------
-    // Update state
-    // --------------------------------------------------
-
     current_screen =
         screen;
-
-    Serial.print(
-        "SCREEN APPLIED -> "
-    );
-
-    print_screen_name(
-        screen
-    );
-
-    Serial.println();
-
-    Serial.println(
-        "SCREEN APPLY END"
-    );
 }
 
 // ==================================================
-// INIT
+// Initialize Screen Manager
 // ==================================================
 
 void screen_manager_init(void)
@@ -180,10 +108,6 @@ void screen_manager_init(void)
 
     if (main_screen == NULL)
     {
-        Serial.println(
-            "SCREEN MANAGER ERROR: MAIN NULL"
-        );
-
         return;
     }
 
@@ -198,14 +122,10 @@ void screen_manager_init(void)
     lv_refr_now(
         lv_disp_get_default()
     );
-
-    Serial.println(
-        "SCREEN MANAGER: MAIN"
-    );
 }
 
 // ==================================================
-// REQUEST SCREEN
+// Request Screen Change
 // ==================================================
 
 void screen_manager_show(
@@ -220,20 +140,10 @@ void screen_manager_show(
 
     screen_reload_pending =
         false;
-
-    Serial.print(
-        "SCREEN REQUEST -> "
-    );
-
-    print_screen_name(
-        screen
-    );
-
-    Serial.println();
 }
 
 // ==================================================
-// REQUEST RELOAD
+// Request Current Screen Reload
 // ==================================================
 
 void screen_manager_reload(void)
@@ -246,20 +156,10 @@ void screen_manager_reload(void)
 
     screen_reload_pending =
         true;
-
-    Serial.print(
-        "SCREEN RELOAD REQUESTED -> "
-    );
-
-    print_screen_name(
-        current_screen
-    );
-
-    Serial.println();
 }
 
 // ==================================================
-// PROCESS SCREEN REQUEST
+// Process Pending Screen Request
 // ==================================================
 
 void screen_manager_process(void)
@@ -281,42 +181,13 @@ void screen_manager_process(void)
     screen_reload_pending =
         false;
 
-    Serial.println(
-        "SCREEN PROCESS"
-    );
-
-    // ==================================================
-    // NORMAL SCREEN CHANGE
-    // ==================================================
-
     if (
         !reload &&
         requested_screen ==
         current_screen
     )
     {
-        Serial.println(
-            "SCREEN PROCESS: SAME SCREEN"
-        );
-
         return;
-    }
-
-    // ==================================================
-    // RELOAD
-    // ==================================================
-
-    if (reload)
-    {
-        Serial.println(
-            "SCREEN PROCESS: RELOAD"
-        );
-    }
-    else
-    {
-        Serial.println(
-            "SCREEN PROCESS: CHANGE"
-        );
     }
 
     load_screen_now(
@@ -325,7 +196,7 @@ void screen_manager_process(void)
 }
 
 // ==================================================
-// GET CURRENT SCREEN
+// Get Current Screen
 // ==================================================
 
 enum ScreensEnum screen_manager_get(void)
@@ -334,7 +205,7 @@ enum ScreensEnum screen_manager_get(void)
 }
 
 // ==================================================
-// CHECK CURRENT SCREEN
+// Check Current Screen
 // ==================================================
 
 bool screen_manager_is(
