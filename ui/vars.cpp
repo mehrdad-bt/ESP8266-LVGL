@@ -5,17 +5,23 @@
 #include "tasks.h"
 
 // ==================================================
-// TEXT BUFFERS
+// Text Buffers
 // ==================================================
 
-static char voltage_min_text_value[16] = "20.0";
-static char voltage_max_text_value[16] = "25.0";
-static char current_min_text_value[16] = "0.0";
-static char current_max_text_value[16] = "1.0";
+static char voltage_min_text_value[16] =
+    "20.0";
 
+static char voltage_max_text_value[16] =
+    "25.0";
+
+static char current_min_text_value[16] =
+    "0.0";
+
+static char current_max_text_value[16] =
+    "1.0";
 
 // ==================================================
-// NUMERIC VARIABLES
+// Voltage and Current Numeric Variables
 // ==================================================
 
 float get_var_voltage_min(void)
@@ -25,9 +31,10 @@ float get_var_voltage_min(void)
 
 void set_var_voltage_min(float value)
 {
-    set_voltage_min_limit(value);
+    set_voltage_min_limit(
+        value
+    );
 }
-
 
 float get_var_voltage_max(void)
 {
@@ -36,9 +43,10 @@ float get_var_voltage_max(void)
 
 void set_var_voltage_max(float value)
 {
-    set_voltage_max_limit(value);
+    set_voltage_max_limit(
+        value
+    );
 }
-
 
 float get_var_current_min(void)
 {
@@ -47,9 +55,10 @@ float get_var_current_min(void)
 
 void set_var_current_min(float value)
 {
-    set_current_min_limit(value);
+    set_current_min_limit(
+        value
+    );
 }
-
 
 float get_var_current_max(void)
 {
@@ -58,12 +67,13 @@ float get_var_current_max(void)
 
 void set_var_current_max(float value)
 {
-    set_current_max_limit(value);
+    set_current_max_limit(
+        value
+    );
 }
 
-
 // ==================================================
-// BUZZER MODE
+// Buzzer Mode Variable Bridge
 // ==================================================
 
 int32_t get_var_buzzer_mode(void)
@@ -88,12 +98,10 @@ void set_var_buzzer_mode(int32_t value)
     );
 }
 
-
 // ==================================================
-// TEXT VARIABLES
+// Voltage Minimum Text
 // ==================================================
 
-// Voltage MIN
 const char *get_var_voltage_min_text(void)
 {
     snprintf(
@@ -106,10 +114,14 @@ const char *get_var_voltage_min_text(void)
     return voltage_min_text_value;
 }
 
-void set_var_voltage_min_text(const char *value)
+void set_var_voltage_min_text(
+    const char *value
+)
 {
     if (value == NULL)
+    {
         return;
+    }
 
     strncpy(
         voltage_min_text_value,
@@ -122,8 +134,10 @@ void set_var_voltage_min_text(const char *value)
     ] = '\0';
 }
 
+// ==================================================
+// Voltage Maximum Text
+// ==================================================
 
-// Voltage MAX
 const char *get_var_voltage_max_text(void)
 {
     snprintf(
@@ -136,10 +150,14 @@ const char *get_var_voltage_max_text(void)
     return voltage_max_text_value;
 }
 
-void set_var_voltage_max_text(const char *value)
+void set_var_voltage_max_text(
+    const char *value
+)
 {
     if (value == NULL)
+    {
         return;
+    }
 
     strncpy(
         voltage_max_text_value,
@@ -152,8 +170,10 @@ void set_var_voltage_max_text(const char *value)
     ] = '\0';
 }
 
+// ==================================================
+// Current Minimum Text
+// ==================================================
 
-// Current MIN
 const char *get_var_current_min_text(void)
 {
     snprintf(
@@ -166,10 +186,14 @@ const char *get_var_current_min_text(void)
     return current_min_text_value;
 }
 
-void set_var_current_min_text(const char *value)
+void set_var_current_min_text(
+    const char *value
+)
 {
     if (value == NULL)
+    {
         return;
+    }
 
     strncpy(
         current_min_text_value,
@@ -182,8 +206,10 @@ void set_var_current_min_text(const char *value)
     ] = '\0';
 }
 
+// ==================================================
+// Current Maximum Text
+// ==================================================
 
-// Current MAX
 const char *get_var_current_max_text(void)
 {
     snprintf(
@@ -196,10 +222,14 @@ const char *get_var_current_max_text(void)
     return current_max_text_value;
 }
 
-void set_var_current_max_text(const char *value)
+void set_var_current_max_text(
+    const char *value
+)
 {
     if (value == NULL)
+    {
         return;
+    }
 
     strncpy(
         current_max_text_value,
