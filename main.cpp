@@ -31,7 +31,7 @@ TFT_eSPI tft =
 static lv_disp_draw_buf_t draw_buf;
 
 static lv_color_t buf1[
-    SCREEN_WIDTH * 5
+    SCREEN_WIDTH * 10
 ];
 
 // ==================================================

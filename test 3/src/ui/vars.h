@@ -20,7 +20,8 @@ enum FlowGlobalVariables {
     FLOW_GLOBAL_VARIABLE_VOLTAGE_MIN_TEXT = 4,
     FLOW_GLOBAL_VARIABLE_VOLTAGE_MAX_TEXT = 5,
     FLOW_GLOBAL_VARIABLE_CURRENT_MIN_TEXT = 6,
-    FLOW_GLOBAL_VARIABLE_CURRENT_MAX_TEXT = 7
+    FLOW_GLOBAL_VARIABLE_CURRENT_MAX_TEXT = 7,
+    FLOW_GLOBAL_VARIABLE_BUZZER_MODE = 8
 };
 
 // Native global variables
@@ -41,6 +42,8 @@ extern const char *get_var_current_min_text();
 extern void set_var_current_min_text(const char *value);
 extern const char *get_var_current_max_text();
 extern void set_var_current_max_text(const char *value);
+extern int32_t get_var_buzzer_mode();
+extern void set_var_buzzer_mode(int32_t value);
 
 #ifdef __cplusplus
 }

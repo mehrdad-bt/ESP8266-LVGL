@@ -18,6 +18,17 @@ objects_t objects;
 
 lv_obj_t *tick_value_change_obj;
 
+static void event_handler_cb_buzzer_settings_obj1(lv_event_t *e) {
+    lv_event_code_t event = lv_event_get_code(e);
+    if (event == LV_EVENT_VALUE_CHANGED) {
+        lv_obj_t *ta = lv_event_get_target(e);
+        if (tick_value_change_obj != ta) {
+            int32_t value = lv_dropdown_get_selected(ta);
+            set_var_buzzer_mode(value);
+        }
+    }
+}
+
 static void event_handler_cb_v_c_range_settings_voltage_minimum(lv_event_t *e) {
     lv_event_code_t event = lv_event_get_code(e);
     if (event == LV_EVENT_VALUE_CHANGED) {
@@ -137,8 +148,8 @@ void create_screen_main() {
             // Error Box
             lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, true);
             objects.error_box = obj;
-            lv_obj_set_pos(obj, 70, 80);
-            lv_obj_set_size(obj, 180, 100);
+            lv_obj_set_pos(obj, 39, 60);
+            lv_obj_set_size(obj, 235, 132);
             lv_obj_set_style_align(obj, LV_ALIGN_DEFAULT, LV_PART_MAIN | LV_STATE_DEFAULT);
         }
         {
@@ -260,10 +271,11 @@ void create_screen_buzzer_settings() {
         lv_obj_t *parent_obj = obj;
         {
             lv_obj_t *obj = lv_dropdown_create(parent_obj);
-            lv_obj_set_pos(obj, 85, 102);
+            objects.obj1 = obj;
+            lv_obj_set_pos(obj, 85, 75);
             lv_obj_set_size(obj, 150, LV_SIZE_CONTENT);
             lv_dropdown_set_options_static(obj, "MODE 1\nMODE 2\nMODE 3");
-            lv_dropdown_set_selected(obj, 0);
+            lv_obj_add_event_cb(obj, event_handler_cb_buzzer_settings_obj1, LV_EVENT_ALL, 0);
         }
         {
             // buzzer_settings_page_label
@@ -297,6 +309,17 @@ void create_screen_buzzer_settings() {
 }
 
 void tick_screen_buzzer_settings() {
+    {
+        if (!(lv_obj_get_state(objects.obj1) & LV_STATE_EDITED)) {
+            int32_t new_val = get_var_buzzer_mode();
+            int32_t cur_val = lv_dropdown_get_selected(objects.obj1);
+            if (new_val != cur_val) {
+                tick_value_change_obj = objects.obj1;
+                lv_dropdown_set_selected(objects.obj1, new_val);
+                tick_value_change_obj = NULL;
+            }
+        }
+    }
 }
 
 void create_screen_v_c_range_settings() {

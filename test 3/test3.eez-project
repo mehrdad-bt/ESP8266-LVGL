@@ -141,6 +141,50 @@
         "defaultValue": "0",
         "persistent": false,
         "native": false
+      },
+      {
+        "objID": "1cec8526-099c-41ec-b7bc-0b1d07d01209",
+        "name": "voltage_min_text",
+        "type": "string",
+        "size": null,
+        "defaultValue": "\"\"",
+        "persistent": false,
+        "native": false
+      },
+      {
+        "objID": "5b1286d0-68e2-4f37-9b45-7199a1f03e72",
+        "name": "voltage_max_text",
+        "type": "string",
+        "size": null,
+        "defaultValue": "\"\"",
+        "persistent": false,
+        "native": false
+      },
+      {
+        "objID": "798fea51-4a4c-4812-cfc2-8e066fc3e898",
+        "name": "current_min_text",
+        "type": "string",
+        "size": null,
+        "defaultValue": "\"\"",
+        "persistent": false,
+        "native": false
+      },
+      {
+        "objID": "0555e5dd-f1d7-481e-d3a1-565e01f8e0d6",
+        "name": "current_max_text",
+        "type": "string",
+        "size": null,
+        "defaultValue": "\"\"",
+        "persistent": false,
+        "native": false
+      },
+      {
+        "objID": "0a714a5f-8cad-4f6b-fbbe-a37f538b5393",
+        "name": "buzzer_mode",
+        "type": "integer",
+        "defaultValue": "0",
+        "persistent": false,
+        "native": false
       }
     ],
     "structures": [],
@@ -200,42 +244,6 @@
       "componentGroups": [],
       "userProperties": [],
       "name": "go_from_buzzer_settings_page_to_settings_page"
-    },
-    {
-      "objID": "38fe2387-2ec6-4b2b-d5a1-35a30a5345be",
-      "components": [],
-      "connectionLines": [],
-      "localVariables": [],
-      "componentGroups": [],
-      "userProperties": [],
-      "name": "voltage_min_changed"
-    },
-    {
-      "objID": "3e4f4614-621b-4970-c191-f6c304d093f4",
-      "components": [],
-      "connectionLines": [],
-      "localVariables": [],
-      "componentGroups": [],
-      "userProperties": [],
-      "name": "voltage_max_changed"
-    },
-    {
-      "objID": "2fcfcd34-907f-4bca-d78f-6fab50520c08",
-      "components": [],
-      "connectionLines": [],
-      "localVariables": [],
-      "componentGroups": [],
-      "userProperties": [],
-      "name": "current_min_changed"
-    },
-    {
-      "objID": "beefbc5b-1a9d-47ca-f7c8-a1b95875c13a",
-      "components": [],
-      "connectionLines": [],
-      "localVariables": [],
-      "componentGroups": [],
-      "userProperties": [],
-      "name": "current_max_changed"
     },
     {
       "objID": "1d7df2f1-5686-4cb4-8d77-8d49436becf8",
@@ -331,7 +339,7 @@
               "eventHandlers": [
                 {
                   "objID": "1e6db1fa-3705-4529-a43b-0efa9a6cf284",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "go_to_settings_page",
                   "userData": 0
@@ -573,6 +581,7 @@
               "checkedStateType": "literal",
               "disabledStateType": "literal",
               "states": "",
+              "useStyle": "",
               "localStyles": {
                 "objID": "5f0994fa-deb5-43b8-8cae-f1d1f281a947"
               },
@@ -630,10 +639,10 @@
             {
               "objID": "77d842ec-da24-4fba-f787-fc3c2d567263",
               "type": "LVGLMessageBoxWidget",
-              "left": 70,
-              "top": 80,
-              "width": 180,
-              "height": 100,
+              "left": 39,
+              "top": 60,
+              "width": 235,
+              "height": 132,
               "customInputs": [],
               "customOutputs": [],
               "style": {
@@ -788,7 +797,7 @@
               "eventHandlers": [
                 {
                   "objID": "bb11f09f-5c98-4388-e417-59bb6c4b8f94",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "exit_to_main_page",
                   "userData": 0
@@ -887,7 +896,7 @@
               "eventHandlers": [
                 {
                   "objID": "4833c4f8-cad8-40cb-e5e0-c44d7373372d",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "go_to_buzzer_settings",
                   "userData": 0
@@ -986,7 +995,7 @@
               "eventHandlers": [
                 {
                   "objID": "5b44cd1b-ae8d-47a6-de9d-e6ce8d728232",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "go_to_touch_calibration",
                   "userData": 0
@@ -1085,7 +1094,7 @@
               "eventHandlers": [
                 {
                   "objID": "ee369d49-25f7-4367-c24c-5210c8750aef",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "go_to_v/c_range_settings",
                   "userData": 0
@@ -1272,7 +1281,7 @@
               "objID": "fea216c5-afd6-4095-87c4-6b17e9276f3b",
               "type": "LVGLDropdownWidget",
               "left": 85,
-              "top": 102,
+              "top": 75,
               "width": 150,
               "height": 36,
               "customInputs": [],
@@ -1308,8 +1317,8 @@
               "groupIndex": 0,
               "options": "MODE 1\nMODE 2\nMODE 3",
               "optionsType": "literal",
-              "selected": 0,
-              "selectedType": "literal",
+              "selected": "buzzer_mode",
+              "selectedType": "expression",
               "direction": "bottom",
               "useStaticText": true
             },
@@ -1376,7 +1385,7 @@
               "eventHandlers": [
                 {
                   "objID": "6ef91dba-0a8d-443f-b5dd-af14efa2be37",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "go_from_buzzer_settings_page_to_settings_page",
                   "userData": 0
@@ -1567,15 +1576,7 @@
                 "childStyles": []
               },
               "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "8180f314-921b-467f-da7d-e0639e66aaca",
-                  "eventName": "VALUE_CHANGED",
-                  "handlerType": "action",
-                  "action": "voltage_min_changed",
-                  "userData": 20
-                }
-              ],
+              "eventHandlers": [],
               "identifier": "voltage_minimum",
               "leftUnit": "px",
               "topUnit": "px",
@@ -1822,7 +1823,7 @@
               },
               "group": "",
               "groupIndex": 0,
-              "text": "voltage_min",
+              "text": "current_min_text",
               "textType": "expression",
               "longMode": "WRAP",
               "recolor": false,
@@ -1867,7 +1868,7 @@
               },
               "group": "",
               "groupIndex": 0,
-              "text": "voltage_max",
+              "text": "voltage_max_text",
               "textType": "expression",
               "longMode": "WRAP",
               "recolor": false,
@@ -1912,7 +1913,7 @@
               },
               "group": "",
               "groupIndex": 0,
-              "text": "current_min",
+              "text": "current_min_text",
               "textType": "expression",
               "longMode": "WRAP",
               "recolor": false,
@@ -1957,7 +1958,7 @@
               },
               "group": "",
               "groupIndex": 0,
-              "text": "current_max",
+              "text": "current_max_text",
               "textType": "expression",
               "longMode": "WRAP",
               "recolor": false,
@@ -1980,15 +1981,7 @@
                 "childStyles": []
               },
               "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "f1807152-8045-4f92-d14d-423d2b530655",
-                  "eventName": "VALUE_CHANGED",
-                  "handlerType": "action",
-                  "action": "voltage_max_changed",
-                  "userData": 25
-                }
-              ],
+              "eventHandlers": [],
               "identifier": "voltage_maximum",
               "leftUnit": "px",
               "topUnit": "px",
@@ -2040,15 +2033,7 @@
                 "childStyles": []
               },
               "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "d3e4114b-9de3-49ec-9f9a-7d397226d11d",
-                  "eventName": "VALUE_CHANGED",
-                  "handlerType": "action",
-                  "action": "current_min_changed",
-                  "userData": 0
-                }
-              ],
+              "eventHandlers": [],
               "identifier": "current_minimum",
               "leftUnit": "px",
               "topUnit": "px",
@@ -2100,15 +2085,7 @@
                 "childStyles": []
               },
               "timeline": [],
-              "eventHandlers": [
-                {
-                  "objID": "8418690d-5c32-49f5-a6df-bc7a3f07de12",
-                  "eventName": "VALUE_CHANGED",
-                  "handlerType": "action",
-                  "action": "current_max_changed",
-                  "userData": 1
-                }
-              ],
+              "eventHandlers": [],
               "identifier": "current_maximum",
               "leftUnit": "px",
               "topUnit": "px",
@@ -2163,7 +2140,7 @@
               "eventHandlers": [
                 {
                   "objID": "a6591062-8ac8-4e7c-cdf7-9084e8059d7e",
-                  "eventName": "PRESSED",
+                  "eventName": "RELEASED",
                   "handlerType": "action",
                   "action": "exit_from_v/c_menu_to_settings",
                   "userData": 0
@@ -2274,7 +2251,24 @@
   "userWidgets": [],
   "lvglStyles": {
     "objID": "a31bd004-35c5-b3fb-5c8b-78ea5c7693b8",
-    "styles": [],
+    "styles": [
+      {
+        "objID": "30fd9c88-1475-4bbd-840a-0273a7845b53",
+        "name": "new",
+        "forWidgetType": "LVGLLabelWidget",
+        "childStyles": [],
+        "definition": {
+          "objID": "2148c268-fbea-465b-c892-de699421d870",
+          "definition": {
+            "MAIN": {
+              "DISABLED": {
+                "text_color": "#212121"
+              }
+            }
+          }
+        }
+      }
+    ],
     "defaultStyles": {}
   },
   "lvglGroups": {

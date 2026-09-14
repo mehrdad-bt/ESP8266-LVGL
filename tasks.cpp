@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <lvgl.h>
 #include <stdio.h>
@@ -2968,6 +2969,47 @@ void tasks_init(void)
             LV_STATE_DEFAULT
         );
 
+        // ------------------------------------------------
+        // Small shadow under Error Box
+        // ------------------------------------------------
+
+        lv_obj_set_style_shadow_width(
+            objects.error_box,
+            6,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_shadow_color(
+            objects.error_box,
+            lv_color_hex(
+                0x000000
+            ),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_shadow_opa(
+            objects.error_box,
+            LV_OPA_40,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_shadow_ofs_x(
+            objects.error_box,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_shadow_ofs_y(
+            objects.error_box,
+            3,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
         error_box_last_color =
             LED_RED;
 
@@ -3081,3 +3123,4 @@ void tasks_run(void)
     // Update status LED
     led_task();
 }
+
