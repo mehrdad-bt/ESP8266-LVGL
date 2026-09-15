@@ -96,7 +96,7 @@ void create_screen_main() {
             // BTN_SETTINGS
             lv_obj_t *obj = lv_btn_create(parent_obj);
             objects.btn_settings = obj;
-            lv_obj_set_pos(obj, 233, 167);
+            lv_obj_set_pos(obj, 11, 167);
             lv_obj_set_size(obj, 82, 50);
             lv_obj_add_event_cb(obj, action_go_to_settings_page, LV_EVENT_RELEASED, (void *)0);
             {
@@ -128,25 +128,37 @@ void create_screen_main() {
         }
         {
             lv_obj_t *obj = lv_label_create(parent_obj);
-            lv_obj_set_pos(obj, 233, 12);
+            lv_obj_set_pos(obj, 231, 15);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "STATUS");
         }
         {
+            // voltage_label_main
             lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.voltage_label_main = obj;
             lv_obj_set_pos(obj, 11, 44);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "VOLTAGE:");
         }
         {
+            // current_label_main
             lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.current_label_main = obj;
             lv_obj_set_pos(obj, 11, 68);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "CURRENT:");
         }
         {
+            // voltage_current_hide
+            lv_obj_t *obj = lv_switch_create(parent_obj);
+            objects.voltage_current_hide = obj;
+            lv_obj_set_pos(obj, 217, 175);
+            lv_obj_set_size(obj, 50, 25);
+            lv_obj_add_event_cb(obj, action_hide_voltage_and_current_parameters_main_screen, LV_EVENT_RELEASED, (void *)0);
+        }
+        {
             // Error Box
-            lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, false);
+            lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, true);
             objects.error_box = obj;
             lv_obj_set_pos(obj, 39, 60);
             lv_obj_set_size(obj, 235, 132);
@@ -159,6 +171,12 @@ void create_screen_main() {
             lv_obj_set_pos(obj, 103, 126);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text(obj, "");
+        }
+        {
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            lv_obj_set_pos(obj, 168, 209);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text_static(obj, "HIDE PARAMETERS");
         }
     }
     
@@ -173,6 +191,7 @@ void create_screen_settings_page() {
     objects.settings_page = obj;
     lv_obj_set_pos(obj, 0, 0);
     lv_obj_set_size(obj, 320, 240);
+    lv_obj_add_event_cb(obj, action_go_to_themes_page, LV_EVENT_RELEASED, (void *)0);
     {
         lv_obj_t *parent_obj = obj;
         {
@@ -252,6 +271,23 @@ void create_screen_settings_page() {
             lv_obj_set_pos(obj, 134, 12);
             lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
             lv_label_set_text_static(obj, "SETTINGS");
+        }
+        {
+            lv_obj_t *obj = lv_btn_create(parent_obj);
+            lv_obj_set_pos(obj, 134, 49);
+            lv_obj_set_size(obj, 98, 44);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    // Themes_button
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    objects.themes_button = obj;
+                    lv_obj_set_pos(obj, 0, 0);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text_static(obj, "THEMES");
+                }
+            }
         }
     }
     
@@ -525,15 +561,75 @@ void tick_screen_v_c_range_settings() {
     }
 }
 
+void create_screen_themes() {
+    lv_obj_t *obj = lv_obj_create(0);
+    objects.themes = obj;
+    lv_obj_set_pos(obj, 0, 0);
+    lv_obj_set_size(obj, 320, 240);
+    {
+        lv_obj_t *parent_obj = obj;
+        {
+            // light_theme
+            lv_obj_t *obj = lv_checkbox_create(parent_obj);
+            objects.light_theme = obj;
+            lv_obj_set_pos(obj, 31, 63);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_checkbox_set_text_static(obj, "Light");
+            lv_obj_add_event_cb(obj, action_select_light_theme, LV_EVENT_RELEASED, (void *)0);
+        }
+        {
+            // Dark_theme
+            lv_obj_t *obj = lv_checkbox_create(parent_obj);
+            objects.dark_theme = obj;
+            lv_obj_set_pos(obj, 31, 100);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_checkbox_set_text_static(obj, "Dark");
+            lv_obj_add_event_cb(obj, action_select_dark_theme, LV_EVENT_RELEASED, (void *)0);
+        }
+        {
+            // theme_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.theme_label = obj;
+            lv_obj_set_pos(obj, 135, 13);
+            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+            lv_label_set_text_static(obj, "THEME");
+        }
+        {
+            // exit_theme_page
+            lv_obj_t *obj = lv_btn_create(parent_obj);
+            objects.exit_theme_page = obj;
+            lv_obj_set_pos(obj, 244, 195);
+            lv_obj_set_size(obj, 64, 36);
+            lv_obj_add_event_cb(obj, action_exit_from_themes_page, LV_EVENT_RELEASED, (void *)0);
+            {
+                lv_obj_t *parent_obj = obj;
+                {
+                    lv_obj_t *obj = lv_label_create(parent_obj);
+                    lv_obj_set_pos(obj, 0, 0);
+                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
+                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                    lv_label_set_text_static(obj, "EXIT");
+                }
+            }
+        }
+    }
+    
+    tick_screen_themes();
+}
+
+void tick_screen_themes() {
+}
+
 typedef void (*tick_screen_func_t)();
 tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_main,
     tick_screen_settings_page,
     tick_screen_buzzer_settings,
     tick_screen_v_c_range_settings,
+    tick_screen_themes,
 };
 void tick_screen(int screen_index) {
-    if (screen_index >= 0 && screen_index < 4) {
+    if (screen_index >= 0 && screen_index < 5) {
         tick_screen_funcs[screen_index]();
     }
 }
@@ -634,4 +730,5 @@ void create_screens() {
     create_screen_settings_page();
     create_screen_buzzer_settings();
     create_screen_v_c_range_settings();
+    create_screen_themes();
 }

@@ -1,12 +1,12 @@
+
 #include "actions.h"
 #include "screens.h"
-
 #include "screen_manager.h"
 #include "touchCalibration.h"
 #include "tasks.h"
 
 // ==================================================
-// MAIN -> SETTINGS
+// Go To Settings
 // ==================================================
 
 void action_go_to_settings_page(lv_event_t *e)
@@ -19,7 +19,7 @@ void action_go_to_settings_page(lv_event_t *e)
 }
 
 // ==================================================
-// SETTINGS -> MAIN
+// Exit To Main
 // ==================================================
 
 void action_exit_to_main_page(lv_event_t *e)
@@ -32,7 +32,7 @@ void action_exit_to_main_page(lv_event_t *e)
 }
 
 // ==================================================
-// SETTINGS -> BUZZER
+// Go To Buzzer Settings
 // ==================================================
 
 void action_go_to_buzzer_settings(lv_event_t *e)
@@ -45,7 +45,7 @@ void action_go_to_buzzer_settings(lv_event_t *e)
 }
 
 // ==================================================
-// SETTINGS -> TOUCH CALIBRATION
+// Go To Touch Calibration
 // ==================================================
 
 void action_go_to_touch_calibration(lv_event_t *e)
@@ -58,7 +58,7 @@ void action_go_to_touch_calibration(lv_event_t *e)
 }
 
 // ==================================================
-// SETTINGS -> V/C RANGE
+// Go To V/C Range Settings
 // ==================================================
 
 void action_go_to_v_c_range_settings(lv_event_t *e)
@@ -71,7 +71,7 @@ void action_go_to_v_c_range_settings(lv_event_t *e)
 }
 
 // ==================================================
-// BUZZER -> SETTINGS
+// Buzzer Settings -> Settings
 // ==================================================
 
 void action_go_from_buzzer_settings_page_to_settings_page(
@@ -86,7 +86,7 @@ void action_go_from_buzzer_settings_page_to_settings_page(
 }
 
 // ==================================================
-// V/C RANGE -> SETTINGS
+// V/C Range -> Settings
 // ==================================================
 
 void action_exit_from_v_c_menu_to_settings(
@@ -101,14 +101,156 @@ void action_exit_from_v_c_menu_to_settings(
 }
 
 // ==================================================
-// VOLTAGE MIN
+// Hide / Show Voltage and Current Parameters
+// ==================================================
+
+void action_hide_voltage_and_current_parameters_main_screen(
+    lv_event_t *e
+)
+{
+    (void)e;
+
+    if (objects.voltage_current_hide == NULL)
+        return;
+
+    bool hide =
+        lv_obj_has_state(
+            objects.voltage_current_hide,
+            LV_STATE_CHECKED
+        );
+
+    // --------------------------------------------------
+    // Voltage value
+    // --------------------------------------------------
+
+    if (objects.voltage != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.voltage,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.voltage,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Current value
+    // --------------------------------------------------
+
+    if (objects.current != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.current,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.current,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Voltage label
+    // --------------------------------------------------
+
+    if (objects.voltage_label_main != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.voltage_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.voltage_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Current label
+    // --------------------------------------------------
+
+    if (objects.current_label_main != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.current_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.current_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Refresh changed objects
+    // --------------------------------------------------
+
+    if (objects.voltage != NULL)
+    {
+        lv_obj_invalidate(
+            objects.voltage
+        );
+    }
+
+    if (objects.current != NULL)
+    {
+        lv_obj_invalidate(
+            objects.current
+        );
+    }
+
+    if (objects.voltage_label_main != NULL)
+    {
+        lv_obj_invalidate(
+            objects.voltage_label_main
+        );
+    }
+
+    if (objects.current_label_main != NULL)
+    {
+        lv_obj_invalidate(
+            objects.current_label_main
+        );
+    }
+}
+
+// ==================================================
+// Voltage Minimum
 // ==================================================
 
 void action_voltage_min_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (objects.voltage_minimum == NULL)
+    if (
+        objects.voltage_minimum == NULL
+    )
     {
         return;
     }
@@ -124,14 +266,16 @@ void action_voltage_min_changed(lv_event_t *e)
 }
 
 // ==================================================
-// VOLTAGE MAX
+// Voltage Maximum
 // ==================================================
 
 void action_voltage_max_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (objects.voltage_maximum == NULL)
+    if (
+        objects.voltage_maximum == NULL
+    )
     {
         return;
     }
@@ -147,14 +291,16 @@ void action_voltage_max_changed(lv_event_t *e)
 }
 
 // ==================================================
-// CURRENT MIN
+// Current Minimum
 // ==================================================
 
 void action_current_min_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (objects.current_minimum == NULL)
+    if (
+        objects.current_minimum == NULL
+    )
     {
         return;
     }
@@ -170,14 +316,16 @@ void action_current_min_changed(lv_event_t *e)
 }
 
 // ==================================================
-// CURRENT MAX
+// Current Maximum
 // ==================================================
 
 void action_current_max_changed(lv_event_t *e)
 {
     (void)e;
 
-    if (objects.current_maximum == NULL)
+    if (
+        objects.current_maximum == NULL
+    )
     {
         return;
     }
@@ -191,3 +339,4 @@ void action_current_max_changed(lv_event_t *e)
         (float)value
     );
 }
+

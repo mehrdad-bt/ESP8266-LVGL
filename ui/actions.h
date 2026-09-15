@@ -1,7 +1,7 @@
 #ifndef EEZ_LVGL_UI_EVENTS_H
 #define EEZ_LVGL_UI_EVENTS_H
 
-#include <lvgl.h>
+#include <lvgl/lvgl.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -14,6 +14,11 @@ extern void action_go_to_touch_calibration(lv_event_t * e);
 extern void action_go_to_v_c_range_settings(lv_event_t * e);
 extern void action_go_from_buzzer_settings_page_to_settings_page(lv_event_t * e);
 extern void action_exit_from_v_c_menu_to_settings(lv_event_t * e);
+extern void action_hide_voltage_and_current_parameters_main_screen(lv_event_t * e);
+extern void action_select_light_theme(lv_event_t * e);
+extern void action_select_dark_theme(lv_event_t * e);
+extern void action_go_to_themes_page(lv_event_t * e);
+extern void action_exit_from_themes_page(lv_event_t * e);
 
 #ifdef __cplusplus
 }

@@ -35,11 +35,14 @@ extern lv_obj_t *tick_value_change_obj;
 #define UART_TIMEOUT_MS 3000
 #define ERROR_TEXT_BLINK_MS 500
 
+#define ERROR_BOX_ANIM_MS 180
+
 // ==================================================
 // Menu Indices
 // ==================================================
 
-#define MAIN_OPTION_SETTINGS 0
+#define MAIN_OPTION_SETTINGS   0
+#define MAIN_OPTION_HIDE_VC    1
 
 #define SETTINGS_OPTION_BUZZER        0
 #define SETTINGS_OPTION_CALIBRATION   1
@@ -211,12 +214,6 @@ static bool buzzer_focus_back =
 // Voltage / Current UI State
 // ==================================================
 
-// 0 = Voltage minimum
-// 1 = Voltage maximum
-// 2 = Current minimum
-// 3 = Current maximum
-// 4 = Back button
-
 static uint8_t vc_focus =
     0;
 
@@ -305,6 +302,13 @@ static uint32_t error_box_last_color =
     0xFFFFFFFFUL;
 
 // ==================================================
+// Error Box Animation State
+// ==================================================
+
+static bool error_box_animating =
+    false;
+
+// ==================================================
 // Focus Screen Cache
 // ==================================================
 
@@ -330,6 +334,7 @@ static void update_error_text_blink(void);
 static void update_vc_range_gui(void);
 static void update_buzzer_gui(void);
 static void update_input_focus_gui(void);
+static void update_voltage_current_visibility(void);
 
 static ErrorType get_error_type(void);
 
@@ -340,12 +345,21 @@ static bool buzzer_screen_active(void);
 static void init_error_msgbox(void);
 static void set_error_text(const char *text);
 
+static void error_box_show_animation(void);
+static void error_box_hide(void);
+
 static void buttons_task(void);
 
 static void buzzer_dropdown_find(void);
 static void buzzer_dropdown_change(int direction);
 
 static void vc_change_value(void);
+
+static void clear_main_focus(void);
+static void apply_main_focus(void);
+
+static void clear_settings_highlight(void);
+static void apply_settings_highlight(void);
 
 static void clear_buzzer_focus(void);
 static void apply_buzzer_focus(void);
@@ -380,6 +394,364 @@ static bool buzzer_screen_active(void)
 {
     return screen_manager_get() ==
            SCREEN_ID_BUZZER_SETTINGS;
+}
+
+// ==================================================
+// Voltage / Current Visibility
+// ==================================================
+
+static void update_voltage_current_visibility(void)
+{
+    if (objects.voltage_current_hide == NULL)
+        return;
+
+    bool hide =
+        lv_obj_has_state(
+            objects.voltage_current_hide,
+            LV_STATE_CHECKED
+        );
+
+    // --------------------------------------------------
+    // Voltage value
+    // --------------------------------------------------
+
+    if (objects.voltage != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.voltage,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.voltage,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Current value
+    // --------------------------------------------------
+
+    if (objects.current != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.current,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.current,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Voltage title
+    // --------------------------------------------------
+
+    if (objects.voltage_label_main != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.voltage_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.voltage_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+
+    // --------------------------------------------------
+    // Current title
+    // --------------------------------------------------
+
+    if (objects.current_label_main != NULL)
+    {
+        if (hide)
+        {
+            lv_obj_add_flag(
+                objects.current_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+        else
+        {
+            lv_obj_clear_flag(
+                objects.current_label_main,
+                LV_OBJ_FLAG_HIDDEN
+            );
+        }
+    }
+}
+
+// ==================================================
+// Main Screen Focus
+// ==================================================
+
+static void clear_main_focus(void)
+{
+    // --------------------------------------------------
+    // Settings button
+    // --------------------------------------------------
+
+    if (objects.btn_settings != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.btn_settings,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    // --------------------------------------------------
+    // Hide V/C checkbox
+    // --------------------------------------------------
+
+    if (objects.voltage_current_hide != NULL)
+    {
+        // Clear border in normal state
+        lv_obj_set_style_border_width(
+            objects.voltage_current_hide,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        // Clear border in checked state
+        lv_obj_set_style_border_width(
+            objects.voltage_current_hide,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_CHECKED
+        );
+    }
+}
+
+static void apply_main_focus(void)
+{
+    if (!main_screen_active())
+    {
+        return;
+    }
+
+    clear_main_focus();
+
+    lv_obj_t *selected =
+        NULL;
+
+    switch (main_selection)
+    {
+        case MAIN_OPTION_SETTINGS:
+
+            selected =
+                objects.btn_settings;
+
+            break;
+
+        case MAIN_OPTION_HIDE_VC:
+
+            selected =
+                objects.voltage_current_hide;
+
+            break;
+
+        default:
+
+            break;
+    }
+
+    if (selected != NULL)
+    {
+        // --------------------------------------------------
+        // Normal state
+        // --------------------------------------------------
+
+        lv_obj_set_style_border_width(
+            selected,
+            2,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_border_color(
+            selected,
+            lv_color_hex(
+                FOCUS_COLOR
+            ),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        // --------------------------------------------------
+        // Checked state
+        // --------------------------------------------------
+
+        lv_obj_set_style_border_width(
+            selected,
+            2,
+            LV_PART_MAIN |
+            LV_STATE_CHECKED
+        );
+
+        lv_obj_set_style_border_color(
+            selected,
+            lv_color_hex(
+                FOCUS_COLOR
+            ),
+            LV_PART_MAIN |
+            LV_STATE_CHECKED
+        );
+    }
+}
+
+// ==================================================
+// Settings Focus
+// ==================================================
+
+static void clear_settings_highlight(void)
+{
+    // --------------------------------------------------
+    // Buzzer
+    // --------------------------------------------------
+
+    if (objects.buzzer != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.buzzer,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    // --------------------------------------------------
+    // Touch Calibration
+    // --------------------------------------------------
+
+    if (objects.touch_calibration != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.touch_calibration,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    // --------------------------------------------------
+    // Voltage Range
+    // --------------------------------------------------
+
+    if (objects.voltage_range != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.voltage_range,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    // --------------------------------------------------
+    // Back
+    // --------------------------------------------------
+
+    if (objects.exit_settings != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.exit_settings,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+}
+
+static void apply_settings_highlight(void)
+{
+    if (
+        screen_manager_get() !=
+        SCREEN_ID_SETTINGS_PAGE
+    )
+    {
+        return;
+    }
+
+    clear_settings_highlight();
+
+    lv_obj_t *selected =
+        NULL;
+
+    switch (settings_selection)
+    {
+        case SETTINGS_OPTION_BUZZER:
+
+            selected =
+                objects.buzzer;
+
+            break;
+
+        case SETTINGS_OPTION_CALIBRATION:
+
+            selected =
+                objects.touch_calibration;
+
+            break;
+
+        case SETTINGS_OPTION_VC_RANGE:
+
+            selected =
+                objects.voltage_range;
+
+            break;
+
+        case SETTINGS_OPTION_BACK:
+
+            selected =
+                objects.exit_settings;
+
+            break;
+
+        default:
+
+            break;
+    }
+
+    if (selected != NULL)
+    {
+        lv_obj_set_style_border_width(
+            selected,
+            2,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_border_color(
+            selected,
+            lv_color_hex(
+                FOCUS_COLOR
+            ),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
 }
 
 // ==================================================
@@ -492,6 +864,148 @@ static void init_error_msgbox(void)
 
     error_text_blink_state =
         true;
+}
+
+// ==================================================
+// Error Box Show Animation
+// ==================================================
+
+static void error_box_show_animation(void)
+{
+    if (objects.error_box == NULL)
+    {
+        return;
+    }
+
+    lv_anim_del(
+        objects.error_box,
+        NULL
+    );
+
+    error_box_animating =
+        true;
+
+    lv_obj_set_style_transform_pivot_x(
+        objects.error_box,
+        lv_obj_get_width(
+            objects.error_box
+        ) / 2,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    lv_obj_set_style_transform_pivot_y(
+        objects.error_box,
+        lv_obj_get_height(
+            objects.error_box
+        ) / 2,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    lv_obj_set_style_transform_zoom(
+        objects.error_box,
+        192,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    lv_anim_t anim;
+
+    lv_anim_init(
+        &anim
+    );
+
+    lv_anim_set_var(
+        &anim,
+        objects.error_box
+    );
+
+    lv_anim_set_exec_cb(
+        &anim,
+        [](void *obj, int32_t value)
+        {
+            lv_obj_set_style_transform_zoom(
+                (lv_obj_t *)obj,
+                value,
+                LV_PART_MAIN |
+                LV_STATE_DEFAULT
+            );
+        }
+    );
+
+    lv_anim_set_values(
+        &anim,
+        192,
+        256
+    );
+
+    lv_anim_set_time(
+        &anim,
+        ERROR_BOX_ANIM_MS
+    );
+
+    lv_anim_set_path_cb(
+        &anim,
+        lv_anim_path_ease_out
+    );
+
+    lv_anim_set_ready_cb(
+        &anim,
+        [](lv_anim_t *a)
+        {
+            (void)a;
+
+            error_box_animating =
+                false;
+
+            if (objects.error_box != NULL)
+            {
+                lv_obj_set_style_transform_zoom(
+                    objects.error_box,
+                    256,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+            }
+        }
+    );
+
+    lv_anim_start(
+        &anim
+    );
+}
+
+// ==================================================
+// Error Box Hide
+// ==================================================
+
+static void error_box_hide(void)
+{
+    if (objects.error_box == NULL)
+    {
+        return;
+    }
+
+    lv_anim_del(
+        objects.error_box,
+        NULL
+    );
+
+    error_box_animating =
+        false;
+
+    lv_obj_set_style_transform_zoom(
+        objects.error_box,
+        256,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
+
+    lv_obj_add_flag(
+        objects.error_box,
+        LV_OBJ_FLAG_HIDDEN
+    );
 }
 
 // ==================================================
@@ -1132,106 +1646,6 @@ static void led_task(void)
 }
 
 // ==================================================
-// Settings Focus
-// ==================================================
-
-static void clear_settings_highlight(void)
-{
-    if (objects.buzzer != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.buzzer,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-
-    if (objects.touch_calibration != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.touch_calibration,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-
-    if (objects.voltage_range != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.voltage_range,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-
-    if (objects.exit_settings != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.exit_settings,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-}
-
-static void apply_settings_highlight(void)
-{
-    clear_settings_highlight();
-
-    lv_obj_t *selected =
-        NULL;
-
-    switch (settings_selection)
-    {
-        case SETTINGS_OPTION_BUZZER:
-            selected =
-                objects.buzzer;
-            break;
-
-        case SETTINGS_OPTION_CALIBRATION:
-            selected =
-                objects.touch_calibration;
-            break;
-
-        case SETTINGS_OPTION_VC_RANGE:
-            selected =
-                objects.voltage_range;
-            break;
-
-        case SETTINGS_OPTION_BACK:
-            selected =
-                objects.exit_settings;
-            break;
-
-        default:
-            break;
-    }
-
-    if (selected != NULL)
-    {
-        lv_obj_set_style_border_width(
-            selected,
-            2,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_border_color(
-            selected,
-            lv_color_hex(
-                FOCUS_COLOR
-            ),
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-}
-
-// ==================================================
 // Buzzer Focus
 // ==================================================
 
@@ -1465,13 +1879,53 @@ static void update_input_focus_gui(void)
     enum ScreensEnum current_screen =
         screen_manager_get();
 
+    // --------------------------------------------------
+    // Screen changed
+    // --------------------------------------------------
+
     if (
         current_screen !=
         last_focus_screen
     )
     {
+        clear_main_focus();
+        clear_settings_highlight();
         clear_buzzer_focus();
         clear_vc_focus();
+
+        // --------------------------------------------------
+        // Main screen
+        // --------------------------------------------------
+
+        if (
+            current_screen ==
+            SCREEN_ID_MAIN
+        )
+        {
+            main_selection =
+                MAIN_OPTION_SETTINGS;
+
+            apply_main_focus();
+        }
+
+        // --------------------------------------------------
+        // Settings screen
+        // --------------------------------------------------
+
+        if (
+            current_screen ==
+            SCREEN_ID_SETTINGS_PAGE
+        )
+        {
+            settings_selection =
+                SETTINGS_OPTION_BUZZER;
+
+            apply_settings_highlight();
+        }
+
+        // --------------------------------------------------
+        // Buzzer screen
+        // --------------------------------------------------
 
         if (
             current_screen ==
@@ -1495,6 +1949,10 @@ static void update_input_focus_gui(void)
 
             apply_buzzer_focus();
         }
+
+        // --------------------------------------------------
+        // V/C screen
+        // --------------------------------------------------
 
         if (
             current_screen ==
@@ -1523,6 +1981,34 @@ static void update_input_focus_gui(void)
             false;
     }
 
+    // --------------------------------------------------
+    // Main screen
+    // --------------------------------------------------
+
+    if (
+        current_screen ==
+        SCREEN_ID_MAIN
+    )
+    {
+        apply_main_focus();
+    }
+
+    // --------------------------------------------------
+    // Settings screen
+    // --------------------------------------------------
+
+    if (
+        current_screen ==
+        SCREEN_ID_SETTINGS_PAGE
+    )
+    {
+        apply_settings_highlight();
+    }
+
+    // --------------------------------------------------
+    // Buzzer screen
+    // --------------------------------------------------
+
     if (
         current_screen ==
         SCREEN_ID_BUZZER_SETTINGS
@@ -1547,6 +2033,10 @@ static void update_input_focus_gui(void)
             apply_buzzer_focus();
         }
     }
+
+    // --------------------------------------------------
+    // V/C screen
+    // --------------------------------------------------
 
     if (
         current_screen ==
@@ -1758,8 +2248,18 @@ static void handle_right_release(void)
         SCREEN_ID_MAIN
     )
     {
-        main_selection =
-            MAIN_OPTION_SETTINGS;
+        main_selection++;
+
+        if (
+            main_selection >
+            MAIN_OPTION_HIDE_VC
+        )
+        {
+            main_selection =
+                MAIN_OPTION_SETTINGS;
+        }
+
+        apply_main_focus();
 
         return;
     }
@@ -1871,6 +2371,10 @@ static void handle_select_release(void)
         SCREEN_ID_MAIN
     )
     {
+        // ----------------------------------------------
+        // Settings
+        // ----------------------------------------------
+
         if (
             main_selection ==
             MAIN_OPTION_SETTINGS
@@ -1879,6 +2383,53 @@ static void handle_select_release(void)
             action_go_to_settings_page(
                 NULL
             );
+
+            return;
+        }
+
+        // ----------------------------------------------
+        // Hide / Show V/C
+        // ----------------------------------------------
+
+        if (
+            main_selection ==
+            MAIN_OPTION_HIDE_VC
+        )
+        {
+            if (
+                objects.voltage_current_hide != NULL
+            )
+            {
+                bool checked =
+                    lv_obj_has_state(
+                        objects.voltage_current_hide,
+                        LV_STATE_CHECKED
+                    );
+
+                if (checked)
+                {
+                    lv_obj_clear_state(
+                        objects.voltage_current_hide,
+                        LV_STATE_CHECKED
+                    );
+                }
+                else
+                {
+                    lv_obj_add_state(
+                        objects.voltage_current_hide,
+                        LV_STATE_CHECKED
+                    );
+                }
+
+                action_hide_voltage_and_current_parameters_main_screen(
+                    NULL
+                );
+
+                // Keep red focus after checking/unchecking
+                apply_main_focus();
+            }
+
+            return;
         }
 
         return;
@@ -2464,10 +3015,7 @@ static void update_error_box(void)
             ERROR_NONE
         )
         {
-            lv_obj_add_flag(
-                objects.error_box,
-                LV_OBJ_FLAG_HIDDEN
-            );
+            error_box_hide();
 
             set_error_text(
                 ""
@@ -2569,6 +3117,18 @@ static void update_error_box(void)
     }
 
     // --------------------------------------------------
+    // Hide old box before changing error
+    // --------------------------------------------------
+
+    if (
+        gui_last_error !=
+        ERROR_NONE
+    )
+    {
+        error_box_hide();
+    }
+
+    // --------------------------------------------------
     // Update error text
     // --------------------------------------------------
 
@@ -2586,31 +3146,27 @@ static void update_error_box(void)
     );
 
     // --------------------------------------------------
-    // Update box color only when necessary
+    // Update box color
     // --------------------------------------------------
 
-    if (
-        error_box_last_color !=
-        color
-    )
-    {
-        lv_obj_set_style_bg_color(
-            objects.error_box,
-            lv_color_hex(color),
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
+    lv_obj_set_style_bg_color(
+        objects.error_box,
+        lv_color_hex(
+            color
+        ),
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
 
-        lv_obj_set_style_bg_opa(
-            objects.error_box,
-            LV_OPA_60,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
+    lv_obj_set_style_bg_opa(
+        objects.error_box,
+        LV_OPA_60,
+        LV_PART_MAIN |
+        LV_STATE_DEFAULT
+    );
 
-        error_box_last_color =
-            color;
-    }
+    error_box_last_color =
+        color;
 
     // --------------------------------------------------
     // Show error box
@@ -2635,6 +3191,12 @@ static void update_error_box(void)
             LV_OBJ_FLAG_HIDDEN
         );
     }
+
+    // --------------------------------------------------
+    // Animate box
+    // --------------------------------------------------
+
+    error_box_show_animation();
 
     // --------------------------------------------------
     // Restart text blinking
@@ -2662,7 +3224,10 @@ static void gui_update(void)
 
     if (main_screen_active())
     {
+        // ----------------------------------------------
         // Voltage display
+        // ----------------------------------------------
+
         if (
             objects.voltage != NULL &&
             system_state.voltage !=
@@ -2687,7 +3252,10 @@ static void gui_update(void)
                 system_state.voltage;
         }
 
+        // ----------------------------------------------
         // Current display
+        // ----------------------------------------------
+
         if (
             objects.current != NULL &&
             system_state.current !=
@@ -2712,7 +3280,18 @@ static void gui_update(void)
                 system_state.current;
         }
 
+        // ----------------------------------------------
+        // Voltage / Current visibility
+        // ----------------------------------------------
+
+        update_voltage_current_visibility();
+
+        // ----------------------------------------------
+        // Error box
+        // ----------------------------------------------
+
         update_error_box();
+
         update_error_text_blink();
     }
 
@@ -2751,8 +3330,8 @@ static void gui_task(void)
     gui_update();
     update_led_state();
 
-    // Keep EEZ screen tick synchronized with
-    // the screen manager.
+    // Keep EEZ screen tick synchronized
+    // with the screen manager.
     if (!vc_range_screen_active())
     {
         int16_t screen_index =
@@ -3010,8 +3589,36 @@ void tasks_init(void)
             LV_STATE_DEFAULT
         );
 
+        // ------------------------------------------------
+        // Initial transform
+        // ------------------------------------------------
+
+        lv_obj_set_style_transform_pivot_x(
+            objects.error_box,
+            90,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_transform_pivot_y(
+            objects.error_box,
+            50,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_transform_zoom(
+            objects.error_box,
+            256,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
         error_box_last_color =
             LED_RED;
+
+        error_box_animating =
+            false;
 
         init_error_msgbox();
     }
@@ -3029,10 +3636,28 @@ void tasks_init(void)
     }
 
     // --------------------------------------------------
-    // Initialize menu focus
+    // Initialize voltage/current visibility
     // --------------------------------------------------
 
-    apply_settings_highlight();
+    update_voltage_current_visibility();
+
+    // --------------------------------------------------
+    // Initialize main menu
+    // --------------------------------------------------
+
+    main_selection =
+        MAIN_OPTION_SETTINGS;
+
+    // --------------------------------------------------
+    // Initialize settings menu
+    // --------------------------------------------------
+
+    settings_selection =
+        SETTINGS_OPTION_BUZZER;
+
+    // --------------------------------------------------
+    // Initialize other menu states
+    // --------------------------------------------------
 
     buzzer_focus_back =
         false;

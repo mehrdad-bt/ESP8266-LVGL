@@ -66,23 +66,76 @@ static void load_screen_now(
 
     if (screen_obj == NULL)
     {
+        Serial.println(
+            "SCREEN ERROR: NULL SCREEN OBJECT"
+        );
+
         return;
     }
+
+    Serial.print(
+        "SCREEN APPLY START -> "
+    );
+
+    switch (screen)
+    {
+        case SCREEN_ID_MAIN:
+            Serial.println(
+                "MAIN"
+            );
+            break;
+
+        case SCREEN_ID_SETTINGS_PAGE:
+            Serial.println(
+                "SETTINGS"
+            );
+            break;
+
+        case SCREEN_ID_BUZZER_SETTINGS:
+            Serial.println(
+                "BUZZER"
+            );
+            break;
+
+        case SCREEN_ID_V_C_RANGE_SETTINGS:
+            Serial.println(
+                "V/C RANGE"
+            );
+            break;
+
+        default:
+            Serial.println(
+                "UNKNOWN"
+            );
+            break;
+    }
+
+    // ------------------------------------------------
+    // Load screen
+    // ------------------------------------------------
 
     lv_scr_load(
         screen_obj
     );
 
+    // ------------------------------------------------
+    // Update current screen state
+    // ------------------------------------------------
+
+    current_screen =
+        screen;
+
+    // ------------------------------------------------
+    // Request redraw only
+    // ------------------------------------------------
+
     lv_obj_invalidate(
         screen_obj
     );
 
-    lv_refr_now(
-        lv_disp_get_default()
+    Serial.println(
+        "SCREEN APPLY END"
     );
-
-    current_screen =
-        screen;
 }
 
 // ==================================================
@@ -108,6 +161,10 @@ void screen_manager_init(void)
 
     if (main_screen == NULL)
     {
+        Serial.println(
+            "SCREEN MANAGER ERROR: MAIN IS NULL"
+        );
+
         return;
     }
 
@@ -119,8 +176,8 @@ void screen_manager_init(void)
         main_screen
     );
 
-    lv_refr_now(
-        lv_disp_get_default()
+    Serial.println(
+        "SCREEN MANAGER: MAIN LOADED"
     );
 }
 
@@ -140,6 +197,43 @@ void screen_manager_show(
 
     screen_reload_pending =
         false;
+
+    Serial.print(
+        "SCREEN REQUEST -> "
+    );
+
+    switch (screen)
+    {
+        case SCREEN_ID_MAIN:
+            Serial.println(
+                "MAIN"
+            );
+            break;
+
+        case SCREEN_ID_SETTINGS_PAGE:
+            Serial.println(
+                "SETTINGS"
+            );
+            break;
+
+        case SCREEN_ID_BUZZER_SETTINGS:
+            Serial.println(
+                "BUZZER"
+            );
+            break;
+
+        case SCREEN_ID_V_C_RANGE_SETTINGS:
+            Serial.println(
+                "V/C RANGE"
+            );
+            break;
+
+        default:
+            Serial.println(
+                "UNKNOWN"
+            );
+            break;
+    }
 }
 
 // ==================================================
@@ -156,6 +250,10 @@ void screen_manager_reload(void)
 
     screen_reload_pending =
         true;
+
+    Serial.println(
+        "SCREEN REQUEST -> RELOAD"
+    );
 }
 
 // ==================================================
@@ -181,14 +279,26 @@ void screen_manager_process(void)
     screen_reload_pending =
         false;
 
+    // ------------------------------------------------
+    // Ignore same screen unless reload requested
+    // ------------------------------------------------
+
     if (
         !reload &&
         requested_screen ==
         current_screen
     )
     {
+        Serial.println(
+            "SCREEN PROCESS -> SAME SCREEN"
+        );
+
         return;
     }
+
+    Serial.println(
+        "SCREEN PROCESS"
+    );
 
     load_screen_now(
         requested_screen
