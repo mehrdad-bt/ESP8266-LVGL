@@ -8,249 +8,2381 @@
 #include "styles.h"
 #include "ui.h"
 
-#include <string.h>
-
 objects_t objects;
 
-//
-// Event handlers
-//
+// ==================================================
+// Event Handlers
+// ==================================================
 
 lv_obj_t *tick_value_change_obj;
 
-//
-// Screens
-//
+// ==================================================
+// Buzzer Event
+// ==================================================
 
-void create_screen_main() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.main = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 320, 240);
+static void event_handler_cb_buzzer_settings_obj1(
+    lv_event_t *e
+)
+{
+    lv_event_code_t event =
+        lv_event_get_code(e);
+
+    if (event == LV_EVENT_VALUE_CHANGED)
     {
-        lv_obj_t *parent_obj = obj;
+        lv_obj_t *ta =
+            lv_event_get_target(e);
+
+        if (tick_value_change_obj != ta)
         {
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.main_page_label = obj;
-            lv_obj_set_pos(obj, 122, 104);
-            lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-            lv_label_set_text_static(obj, "Main Page");
-        }
-        {
-            lv_obj_t *obj = lv_btn_create(parent_obj);
-            lv_obj_set_pos(obj, 110, 167);
-            lv_obj_set_size(obj, 100, 50);
-            lv_obj_add_event_cb(obj, action_next_page, LV_EVENT_PRESSED, (void *)0);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    lv_obj_set_pos(obj, 0, 0);
-                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "Next");
-                }
-            }
-        }
-        {
-            lv_obj_t *obj = lv_arc_create(parent_obj);
-            lv_obj_set_pos(obj, 25, 16);
-            lv_obj_set_size(obj, 85, 104);
-            lv_arc_set_value(obj, 25);
-        }
-        {
-            lv_obj_t *obj = lv_spinner_create(parent_obj, 1000, 60);
-            lv_obj_set_pos(obj, 223, 16);
-            lv_obj_set_size(obj, 80, 80);
-        }
-        {
-            lv_obj_t *obj = lv_btn_create(parent_obj);
-            lv_obj_set_pos(obj, 13, 167);
-            lv_obj_set_size(obj, 79, 50);
-            lv_obj_add_event_cb(obj, action_calibrate, LV_EVENT_PRESSED, (void *)0);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    lv_obj_set_pos(obj, 0, 0);
-                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "Calibrate");
-                }
-            }
+            int32_t value =
+                lv_dropdown_get_selected(
+                    ta
+                );
+
+            set_var_buzzer_mode(
+                value
+            );
         }
     }
-    
+}
+
+// ==================================================
+// V/C Event - Voltage Min
+// ==================================================
+
+static void event_handler_cb_v_c_range_settings_voltage_minimum(
+    lv_event_t *e
+)
+{
+    lv_event_code_t event =
+        lv_event_get_code(e);
+
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t *ta =
+            lv_event_get_target(e);
+
+        if (tick_value_change_obj != ta)
+        {
+            int32_t value =
+                lv_slider_get_value(
+                    ta
+                );
+
+            set_var_voltage_min(
+                value
+            );
+        }
+    }
+}
+
+// ==================================================
+// V/C Event - Voltage Max
+// ==================================================
+
+static void event_handler_cb_v_c_range_settings_voltage_maximum(
+    lv_event_t *e
+)
+{
+    lv_event_code_t event =
+        lv_event_get_code(e);
+
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t *ta =
+            lv_event_get_target(e);
+
+        if (tick_value_change_obj != ta)
+        {
+            int32_t value =
+                lv_slider_get_value(
+                    ta
+                );
+
+            set_var_voltage_max(
+                value
+            );
+        }
+    }
+}
+
+// ==================================================
+// V/C Event - Current Min
+// ==================================================
+
+static void event_handler_cb_v_c_range_settings_current_minimum(
+    lv_event_t *e
+)
+{
+    lv_event_code_t event =
+        lv_event_get_code(e);
+
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t *ta =
+            lv_event_get_target(e);
+
+        if (tick_value_change_obj != ta)
+        {
+            int32_t value =
+                lv_slider_get_value(
+                    ta
+                );
+
+            set_var_current_min(
+                value
+            );
+        }
+    }
+}
+
+// ==================================================
+// V/C Event - Current Max
+// ==================================================
+
+static void event_handler_cb_v_c_range_settings_current_maximum(
+    lv_event_t *e
+)
+{
+    lv_event_code_t event =
+        lv_event_get_code(e);
+
+    if (event == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t *ta =
+            lv_event_get_target(e);
+
+        if (tick_value_change_obj != ta)
+        {
+            int32_t value =
+                lv_slider_get_value(
+                    ta
+                );
+
+            set_var_current_max(
+                value
+            );
+        }
+    }
+}
+
+// ==================================================
+// Main Screen
+// ==================================================
+
+void create_screen_main()
+{
+    lv_obj_t *obj =
+        lv_obj_create(0);
+
+    objects.main =
+        obj;
+
+    lv_obj_set_pos(
+        obj,
+        0,
+        0
+    );
+
+    lv_obj_set_size(
+        obj,
+        320,
+        240
+    );
+
+    {
+        lv_obj_t *parent_obj =
+            obj;
+
+        // --------------------------------------------------
+        // Voltage
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.voltage =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                92,
+                45
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "Voltage"
+            );
+        }
+
+        // --------------------------------------------------
+        // Settings Button
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.btn_settings =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                11,
+                167
+            );
+
+            lv_obj_set_size(
+                obj,
+                82,
+                50
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_go_to_settings_page,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "SETTINGS"
+                );
+            }
+        }
+
+        // --------------------------------------------------
+        // Current
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.current =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                92,
+                68
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "Current"
+            );
+        }
+
+        // --------------------------------------------------
+        // Status LED
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_led_create(
+                    parent_obj
+                );
+
+            objects.obj0 =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                242,
+                44
+            );
+
+            lv_obj_set_size(
+                obj,
+                32,
+                32
+            );
+
+            lv_led_set_color(
+                obj,
+                lv_color_hex(
+                    0x0000ff
+                )
+            );
+
+            lv_led_set_brightness(
+                obj,
+                255
+            );
+        }
+
+        // --------------------------------------------------
+        // STATUS Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                231,
+                15
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "STATUS"
+            );
+        }
+
+        // --------------------------------------------------
+        // Voltage Main Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.voltage_label_main =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                11,
+                44
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "VOLTAGE:"
+            );
+        }
+
+        // --------------------------------------------------
+        // Current Main Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.current_label_main =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                11,
+                68
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "CURRENT:"
+            );
+        }
+
+        // --------------------------------------------------
+        // Hide V/C Switch
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_switch_create(
+                    parent_obj
+                );
+
+            objects.voltage_current_hide =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                217,
+                175
+            );
+
+            lv_obj_set_size(
+                obj,
+                50,
+                25
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_hide_voltage_and_current_parameters_main_screen,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+        }
+
+        // --------------------------------------------------
+        // Error Box
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_msgbox_create(
+                    parent_obj,
+                    "",
+                    "",
+                    0,
+                    false
+                );
+
+            objects.error_box =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                39,
+                60
+            );
+
+            lv_obj_set_size(
+                obj,
+                235,
+                132
+            );
+
+            lv_obj_set_style_align(
+                obj,
+                LV_ALIGN_DEFAULT,
+                LV_PART_MAIN |
+                LV_STATE_DEFAULT
+            );
+        }
+
+        // --------------------------------------------------
+        // Error Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.error_label =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                103,
+                126
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text(
+                obj,
+                ""
+            );
+        }
+
+        // --------------------------------------------------
+        // Hide Parameters Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                168,
+                209
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "HIDE PARAMETERS"
+            );
+        }
+    }
+
     tick_screen_main();
 }
 
-void tick_screen_main() {
+// ==================================================
+// Tick Main
+// ==================================================
+
+void tick_screen_main()
+{
 }
 
-void create_screen_page_2() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.page_2 = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 320, 240);
+// ==================================================
+// Settings Screen
+// ==================================================
+
+void create_screen_settings_page()
+{
+    lv_obj_t *obj =
+        lv_obj_create(0);
+
+    objects.settings_page =
+        obj;
+
+    lv_obj_set_pos(
+        obj,
+        0,
+        0
+    );
+
+    lv_obj_set_size(
+        obj,
+        320,
+        240
+    );
+
     {
-        lv_obj_t *parent_obj = obj;
+        lv_obj_t *parent_obj =
+            obj;
+
+        // --------------------------------------------------
+        // EXIT SETTINGS
+        // --------------------------------------------------
+
         {
-            lv_obj_t *obj = lv_btn_create(parent_obj);
-            lv_obj_set_pos(obj, 110, 177);
-            lv_obj_set_size(obj, 100, 50);
-            lv_obj_add_event_cb(obj, action_prev_page, LV_EVENT_PRESSED, (void *)0);
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.exit_settings =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                257,
+                195
+            );
+
+            lv_obj_set_size(
+                obj,
+                52,
+                34
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_exit_to_main_page,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
             {
-                lv_obj_t *parent_obj = obj;
-                {
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    lv_obj_set_pos(obj, 0, 0);
-                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "Back");
-                }
-            }
-        }
-        {
-            lv_obj_t *obj = lv_colorwheel_create(parent_obj, false);
-            lv_obj_set_pos(obj, 102, 20);
-            lv_obj_set_size(obj, 125, 122);
-        }
-        {
-            lv_obj_t *obj = lv_led_create(parent_obj);
-            objects.obj0 = obj;
-            lv_obj_set_pos(obj, 262, 88);
-            lv_obj_set_size(obj, 32, 32);
-            lv_led_set_color(obj, lv_color_hex(0xff0000));
-            lv_led_set_brightness(obj, 255);
-        }
-        {
-            lv_obj_t *obj = lv_btn_create(parent_obj);
-            lv_obj_set_pos(obj, 247, 177);
-            lv_obj_set_size(obj, 62, 50);
-            lv_obj_add_event_cb(obj, action_led_change_color, LV_EVENT_PRESSED, (void *)0);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    lv_obj_set_pos(obj, 0, 0);
-                    lv_obj_set_size(obj, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
-                    lv_obj_set_style_align(obj, LV_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "LED");
-                }
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "EXIT"
+                );
             }
         }
 
+        // --------------------------------------------------
+        // BUZZER
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.buzzer =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                8,
+                49
+            );
+
+            lv_obj_set_size(
+                obj,
+                110,
+                42
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_go_to_buzzer_settings,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "BUZZER"
+                );
+            }
+        }
+
+        // --------------------------------------------------
+        // TOUCH CALIBRATION
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.touch_calibration =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                8,
+                109
+            );
+
+            lv_obj_set_size(
+                obj,
+                110,
+                41
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_go_to_touch_calibration,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    " CALIBRATION"
+                );
+            }
+        }
+
+        // --------------------------------------------------
+        // VOLTAGE RANGE
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.voltage_range =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                9,
+                167
+            );
+
+            lv_obj_set_size(
+                obj,
+                110,
+                43
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_go_to_v_c_range_settings,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "V/C RANGE"
+                );
+            }
+        }
+
+        // --------------------------------------------------
+        // SETTINGS Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                134,
+                12
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "SETTINGS"
+            );
+        }
+
+        // --------------------------------------------------
+        // THEMES Button
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                134,
+                49
+            );
+
+            lv_obj_set_size(
+                obj,
+                98,
+                44
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_go_to_themes_page,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "THEMES"
+                );
+            }
+        }
     }
-    
-    tick_screen_page_2();
+
+    tick_screen_settings_page();
 }
 
-void tick_screen_page_2() {
+// ==================================================
+// Tick Settings
+// ==================================================
+
+void tick_screen_settings_page()
+{
 }
+
+// ==================================================
+// Buzzer Screen
+// ==================================================
+
+void create_screen_buzzer_settings()
+{
+    lv_obj_t *obj =
+        lv_obj_create(0);
+
+    objects.buzzer_settings =
+        obj;
+
+    lv_obj_set_pos(
+        obj,
+        0,
+        0
+    );
+
+    lv_obj_set_size(
+        obj,
+        320,
+        240
+    );
+
+    {
+        lv_obj_t *parent_obj =
+            obj;
+
+        // --------------------------------------------------
+        // Dropdown
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_dropdown_create(
+                    parent_obj
+                );
+
+            objects.obj1 =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                85,
+                75
+            );
+
+            lv_obj_set_size(
+                obj,
+                150,
+                LV_SIZE_CONTENT
+            );
+
+            lv_dropdown_set_options_static(
+                obj,
+                "MODE 1\nMODE 2\nMODE 3"
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                event_handler_cb_buzzer_settings_obj1,
+                LV_EVENT_ALL,
+                0
+            );
+        }
+
+        // --------------------------------------------------
+        // Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.buzzer_settings_page_label =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                94,
+                24
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "BUZZER SETTINGS"
+            );
+        }
+
+        // --------------------------------------------------
+        // Back Button
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.buzzer_settings_page_back_button =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                16,
+                189
+            );
+
+            lv_obj_set_size(
+                obj,
+                78,
+                41
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_go_from_buzzer_settings_page_to_settings_page,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "BACK"
+                );
+            }
+        }
+    }
+
+    tick_screen_buzzer_settings();
+}
+
+// ==================================================
+// Tick Buzzer
+// ==================================================
+
+void tick_screen_buzzer_settings()
+{
+    {
+        if (
+            !(lv_obj_get_state(objects.obj1) &
+              LV_STATE_EDITED)
+        )
+        {
+            int32_t new_val =
+                get_var_buzzer_mode();
+
+            int32_t cur_val =
+                lv_dropdown_get_selected(
+                    objects.obj1
+                );
+
+            if (new_val != cur_val)
+            {
+                tick_value_change_obj =
+                    objects.obj1;
+
+                lv_dropdown_set_selected(
+                    objects.obj1,
+                    new_val
+                );
+
+                tick_value_change_obj =
+                    NULL;
+            }
+        }
+    }
+}
+
+// ==================================================
+// V/C Range Screen
+// ==================================================
+
+void create_screen_v_c_range_settings()
+{
+    lv_obj_t *obj =
+        lv_obj_create(0);
+
+    objects.v_c_range_settings =
+        obj;
+
+    lv_obj_set_pos(
+        obj,
+        0,
+        0
+    );
+
+    lv_obj_set_size(
+        obj,
+        320,
+        240
+    );
+
+    {
+        lv_obj_t *parent_obj =
+            obj;
+
+        // --------------------------------------------------
+        // Title
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                47,
+                11
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "VOLTAGE AND CURRENT SETTINGS"
+            );
+        }
+
+        // --------------------------------------------------
+        // Voltage Min Slider
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_slider_create(
+                    parent_obj
+                );
+
+            objects.voltage_minimum =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                61,
+                59
+            );
+
+            lv_obj_set_size(
+                obj,
+                150,
+                10
+            );
+
+            lv_slider_set_range(
+                obj,
+                0,
+                30
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                event_handler_cb_v_c_range_settings_voltage_minimum,
+                LV_EVENT_ALL,
+                0
+            );
+        }
+
+        // --------------------------------------------------
+        // V Min Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                8,
+                56
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "V Min"
+            );
+        }
+
+        // --------------------------------------------------
+        // V Max Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                6,
+                96
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "V Max"
+            );
+        }
+
+        // --------------------------------------------------
+        // C Min Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                3,
+                132
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "C Min"
+            );
+        }
+
+        // --------------------------------------------------
+        // C Max Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                6,
+                167
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "C Max"
+            );
+        }
+
+        // --------------------------------------------------
+        // V Min Value
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.voltage_min_value =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                237,
+                56
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text(
+                obj,
+                ""
+            );
+        }
+
+        // --------------------------------------------------
+        // V Max Value
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.voltage_max_value =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                237,
+                96
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text(
+                obj,
+                ""
+            );
+        }
+
+        // --------------------------------------------------
+        // C Min Value
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.current_min_value =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                238,
+                132
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text(
+                obj,
+                ""
+            );
+        }
+
+        // --------------------------------------------------
+        // C Max Value
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.current_max_value =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                240,
+                167
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text(
+                obj,
+                ""
+            );
+        }
+
+        // --------------------------------------------------
+        // Voltage Max Slider
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_slider_create(
+                    parent_obj
+                );
+
+            objects.voltage_maximum =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                61,
+                99
+            );
+
+            lv_obj_set_size(
+                obj,
+                150,
+                10
+            );
+
+            lv_slider_set_range(
+                obj,
+                0,
+                30
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                event_handler_cb_v_c_range_settings_voltage_maximum,
+                LV_EVENT_ALL,
+                0
+            );
+        }
+
+        // --------------------------------------------------
+        // Current Min Slider
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_slider_create(
+                    parent_obj
+                );
+
+            objects.current_minimum =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                61,
+                135
+            );
+
+            lv_obj_set_size(
+                obj,
+                150,
+                10
+            );
+
+            lv_slider_set_range(
+                obj,
+                0,
+                3
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                event_handler_cb_v_c_range_settings_current_minimum,
+                LV_EVENT_ALL,
+                0
+            );
+        }
+
+        // --------------------------------------------------
+        // Current Max Slider
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_slider_create(
+                    parent_obj
+                );
+
+            objects.current_maximum =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                61,
+                170
+            );
+
+            lv_obj_set_size(
+                obj,
+                150,
+                10
+            );
+
+            lv_slider_set_range(
+                obj,
+                0,
+                3
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                event_handler_cb_v_c_range_settings_current_maximum,
+                LV_EVENT_ALL,
+                0
+            );
+        }
+
+        // --------------------------------------------------
+        // Exit Button
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            lv_obj_set_pos(
+                obj,
+                254,
+                196
+            );
+
+            lv_obj_set_size(
+                obj,
+                57,
+                34
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_exit_from_v_c_menu_to_settings,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                objects.exit_from_v_c_menu_button =
+                    obj;
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "EXIT"
+                );
+            }
+        }
+    }
+
+    tick_screen_v_c_range_settings();
+}
+
+// ==================================================
+// Tick V/C
+// ==================================================
+
+void tick_screen_v_c_range_settings()
+{
+    {
+        int32_t new_val =
+            get_var_voltage_min();
+
+        int32_t cur_val =
+            lv_slider_get_value(
+                objects.voltage_minimum
+            );
+
+        if (new_val != cur_val)
+        {
+            tick_value_change_obj =
+                objects.voltage_minimum;
+
+            lv_slider_set_value(
+                objects.voltage_minimum,
+                new_val,
+                LV_ANIM_ON
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        const char *new_val =
+            get_var_current_min_text();
+
+        const char *cur_val =
+            lv_label_get_text(
+                objects.voltage_min_value
+            );
+
+        if (
+            strcmp(new_val, cur_val) != 0
+        )
+        {
+            tick_value_change_obj =
+                objects.voltage_min_value;
+
+            lv_label_set_text(
+                objects.voltage_min_value,
+                new_val
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        const char *new_val =
+            get_var_voltage_max_text();
+
+        const char *cur_val =
+            lv_label_get_text(
+                objects.voltage_max_value
+            );
+
+        if (
+            strcmp(new_val, cur_val) != 0
+        )
+        {
+            tick_value_change_obj =
+                objects.voltage_max_value;
+
+            lv_label_set_text(
+                objects.voltage_max_value,
+                new_val
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        const char *new_val =
+            get_var_current_min_text();
+
+        const char *cur_val =
+            lv_label_get_text(
+                objects.current_min_value
+            );
+
+        if (
+            strcmp(new_val, cur_val) != 0
+        )
+        {
+            tick_value_change_obj =
+                objects.current_min_value;
+
+            lv_label_set_text(
+                objects.current_min_value,
+                new_val
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        const char *new_val =
+            get_var_current_max_text();
+
+        const char *cur_val =
+            lv_label_get_text(
+                objects.current_max_value
+            );
+
+        if (
+            strcmp(new_val, cur_val) != 0
+        )
+        {
+            tick_value_change_obj =
+                objects.current_max_value;
+
+            lv_label_set_text(
+                objects.current_max_value,
+                new_val
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        int32_t new_val =
+            get_var_voltage_max();
+
+        int32_t cur_val =
+            lv_slider_get_value(
+                objects.voltage_maximum
+            );
+
+        if (new_val != cur_val)
+        {
+            tick_value_change_obj =
+                objects.voltage_maximum;
+
+            lv_slider_set_value(
+                objects.voltage_maximum,
+                new_val,
+                LV_ANIM_ON
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        int32_t new_val =
+            get_var_current_min();
+
+        int32_t cur_val =
+            lv_slider_get_value(
+                objects.current_minimum
+            );
+
+        if (new_val != cur_val)
+        {
+            tick_value_change_obj =
+                objects.current_minimum;
+
+            lv_slider_set_value(
+                objects.current_minimum,
+                new_val,
+                LV_ANIM_ON
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+
+    {
+        int32_t new_val =
+            get_var_current_max();
+
+        int32_t cur_val =
+            lv_slider_get_value(
+                objects.current_maximum
+            );
+
+        if (new_val != cur_val)
+        {
+            tick_value_change_obj =
+                objects.current_maximum;
+
+            lv_slider_set_value(
+                objects.current_maximum,
+                new_val,
+                LV_ANIM_OFF
+            );
+
+            tick_value_change_obj =
+                NULL;
+        }
+    }
+}
+
+// ==================================================
+// Themes Screen
+// ==================================================
+
+void create_screen_themes()
+{
+    lv_obj_t *obj =
+        lv_obj_create(0);
+
+    objects.themes =
+        obj;
+
+    lv_obj_set_pos(
+        obj,
+        0,
+        0
+    );
+
+    lv_obj_set_size(
+        obj,
+        320,
+        240
+    );
+
+    {
+        lv_obj_t *parent_obj =
+            obj;
+
+        // --------------------------------------------------
+        // Light Theme
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_checkbox_create(
+                    parent_obj
+                );
+
+            objects.light_theme =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                31,
+                63
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_checkbox_set_text_static(
+                obj,
+                "Light"
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_select_light_theme,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            // Light is selected by default
+            lv_obj_add_state(
+                obj,
+                LV_STATE_CHECKED
+            );
+        }
+
+        // --------------------------------------------------
+        // Dark Theme
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_checkbox_create(
+                    parent_obj
+                );
+
+            objects.dark_theme =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                31,
+                100
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_checkbox_set_text_static(
+                obj,
+                "Dark"
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_select_dark_theme,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            lv_obj_clear_state(
+                obj,
+                LV_STATE_CHECKED
+            );
+        }
+
+        // --------------------------------------------------
+        // Theme Label
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_label_create(
+                    parent_obj
+                );
+
+            objects.theme_label =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                135,
+                13
+            );
+
+            lv_obj_set_size(
+                obj,
+                LV_SIZE_CONTENT,
+                LV_SIZE_CONTENT
+            );
+
+            lv_label_set_text_static(
+                obj,
+                "THEME"
+            );
+        }
+
+        // --------------------------------------------------
+        // Exit Theme Page
+        // --------------------------------------------------
+
+        {
+            lv_obj_t *obj =
+                lv_btn_create(
+                    parent_obj
+                );
+
+            objects.exit_theme_page =
+                obj;
+
+            lv_obj_set_pos(
+                obj,
+                244,
+                195
+            );
+
+            lv_obj_set_size(
+                obj,
+                64,
+                36
+            );
+
+            lv_obj_add_event_cb(
+                obj,
+                action_exit_from_themes_page,
+                LV_EVENT_RELEASED,
+                (void *)0
+            );
+
+            {
+                lv_obj_t *parent_obj =
+                    obj;
+
+                lv_obj_t *obj =
+                    lv_label_create(
+                        parent_obj
+                    );
+
+                lv_obj_set_pos(
+                    obj,
+                    0,
+                    0
+                );
+
+                lv_obj_set_size(
+                    obj,
+                    LV_SIZE_CONTENT,
+                    LV_SIZE_CONTENT
+                );
+
+                lv_obj_set_style_align(
+                    obj,
+                    LV_ALIGN_CENTER,
+                    LV_PART_MAIN |
+                    LV_STATE_DEFAULT
+                );
+
+                lv_label_set_text_static(
+                    obj,
+                    "EXIT"
+                );
+            }
+        }
+    }
+
+    tick_screen_themes();
+}
+
+// ==================================================
+// Tick Themes
+// ==================================================
+
+void tick_screen_themes()
+{
+}
+
+// ==================================================
+// Tick Screen Functions
+// ==================================================
 
 typedef void (*tick_screen_func_t)();
-tick_screen_func_t tick_screen_funcs[] = {
+
+static tick_screen_func_t tick_screen_funcs[] =
+{
     tick_screen_main,
-    tick_screen_page_2,
+    tick_screen_settings_page,
+    tick_screen_buzzer_settings,
+    tick_screen_v_c_range_settings,
+    tick_screen_themes
 };
-void tick_screen(int screen_index) {
-    if (screen_index >= 0 && screen_index < 2) {
-        tick_screen_funcs[screen_index]();
+
+void tick_screen(
+    int screen_index
+)
+{
+    if (
+        screen_index >= 0 &&
+        screen_index < 5
+    )
+    {
+        tick_screen_funcs[
+            screen_index
+        ]();
     }
 }
-void tick_screen_by_id(enum ScreensEnum screenId) {
-    tick_screen(screenId - 1);
+
+void tick_screen_by_id(
+    enum ScreensEnum screenId
+)
+{
+    tick_screen(
+        screenId - 1
+    );
 }
 
-//
+// ==================================================
 // Fonts
-//
+// ==================================================
 
-ext_font_desc_t fonts[] = {
+ext_font_desc_t fonts[] =
+{
 #if LV_FONT_MONTSERRAT_8
-    { "MONTSERRAT_8", &lv_font_montserrat_8 },
+    {
+        "MONTSERRAT_8",
+        &lv_font_montserrat_8
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_10
-    { "MONTSERRAT_10", &lv_font_montserrat_10 },
+    {
+        "MONTSERRAT_10",
+        &lv_font_montserrat_10
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_12
-    { "MONTSERRAT_12", &lv_font_montserrat_12 },
+    {
+        "MONTSERRAT_12",
+        &lv_font_montserrat_12
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_14
-    { "MONTSERRAT_14", &lv_font_montserrat_14 },
+    {
+        "MONTSERRAT_14",
+        &lv_font_montserrat_14
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_16
-    { "MONTSERRAT_16", &lv_font_montserrat_16 },
+    {
+        "MONTSERRAT_16",
+        &lv_font_montserrat_16
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_18
-    { "MONTSERRAT_18", &lv_font_montserrat_18 },
+    {
+        "MONTSERRAT_18",
+        &lv_font_montserrat_18
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_20
-    { "MONTSERRAT_20", &lv_font_montserrat_20 },
+    {
+        "MONTSERRAT_20",
+        &lv_font_montserrat_20
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_22
-    { "MONTSERRAT_22", &lv_font_montserrat_22 },
+    {
+        "MONTSERRAT_22",
+        &lv_font_montserrat_22
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_24
-    { "MONTSERRAT_24", &lv_font_montserrat_24 },
+    {
+        "MONTSERRAT_24",
+        &lv_font_montserrat_24
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_26
-    { "MONTSERRAT_26", &lv_font_montserrat_26 },
+    {
+        "MONTSERRAT_26",
+        &lv_font_montserrat_26
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_28
-    { "MONTSERRAT_28", &lv_font_montserrat_28 },
+    {
+        "MONTSERRAT_28",
+        &lv_font_montserrat_28
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_30
-    { "MONTSERRAT_30", &lv_font_montserrat_30 },
+    {
+        "MONTSERRAT_30",
+        &lv_font_montserrat_30
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_32
-    { "MONTSERRAT_32", &lv_font_montserrat_32 },
+    {
+        "MONTSERRAT_32",
+        &lv_font_montserrat_32
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_34
-    { "MONTSERRAT_34", &lv_font_montserrat_34 },
+    {
+        "MONTSERRAT_34",
+        &lv_font_montserrat_34
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_36
-    { "MONTSERRAT_36", &lv_font_montserrat_36 },
+    {
+        "MONTSERRAT_36",
+        &lv_font_montserrat_36
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_38
-    { "MONTSERRAT_38", &lv_font_montserrat_38 },
+    {
+        "MONTSERRAT_38",
+        &lv_font_montserrat_38
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_40
-    { "MONTSERRAT_40", &lv_font_montserrat_40 },
+    {
+        "MONTSERRAT_40",
+        &lv_font_montserrat_40
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_42
-    { "MONTSERRAT_42", &lv_font_montserrat_42 },
+    {
+        "MONTSERRAT_42",
+        &lv_font_montserrat_42
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_44
-    { "MONTSERRAT_44", &lv_font_montserrat_44 },
+    {
+        "MONTSERRAT_44",
+        &lv_font_montserrat_44
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_46
-    { "MONTSERRAT_46", &lv_font_montserrat_46 },
+    {
+        "MONTSERRAT_46",
+        &lv_font_montserrat_46
+    },
 #endif
+
 #if LV_FONT_MONTSERRAT_48
-    { "MONTSERRAT_48", &lv_font_montserrat_48 },
+    {
+        "MONTSERRAT_48",
+        &lv_font_montserrat_48
+    },
 #endif
 };
 
-//
-// Color themes
-//
+// ==================================================
+// Create Screens
+// ==================================================
 
-uint32_t active_theme_index = 0;
+void create_screens()
+{
+    // --------------------------------------------------
+    // Default LVGL Theme
+    // --------------------------------------------------
 
-//
-//
-//
+    lv_disp_t *dispp =
+        lv_disp_get_default();
 
-void create_screens() {
+    lv_theme_t *theme =
+        lv_theme_default_init(
+            dispp,
+            lv_palette_main(
+                LV_PALETTE_BLUE
+            ),
+            lv_palette_main(
+                LV_PALETTE_RED
+            ),
+            false,
+            LV_FONT_DEFAULT
+        );
 
-// Set default LVGL theme
-    lv_disp_t *dispp = lv_disp_get_default();
-    lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), false, LV_FONT_DEFAULT);
-    lv_disp_set_theme(dispp, theme);
-    
-    // Initialize screens
-    // Create screens
+    lv_disp_set_theme(
+        dispp,
+        theme
+    );
+
+    // --------------------------------------------------
+    // Create Screens
+    // --------------------------------------------------
+
     create_screen_main();
-    create_screen_page_2();
+    create_screen_settings_page();
+    create_screen_buzzer_settings();
+    create_screen_v_c_range_settings();
+    create_screen_themes();
 }

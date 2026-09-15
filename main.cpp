@@ -2,34 +2,44 @@
 #include <lvgl.h>
 #include <TFT_eSPI.h>
 
-#include "touchCalibration.h"
-#include "uart.h"
-
-extern "C" {
-    #include "ui/ui.h"
+extern "C"
+{
+#include "ui/ui.h"
+#include "ui/screens.h"
 }
 
+#include "uart.h"
+#include "tasks.h"
+#include "screen_manager.h"
 
 // ==================================================
-// TFT
+// Watchdog Configuration
 // ==================================================
 
-TFT_eSPI tft = TFT_eSPI();
-
+#define WDT_TIMEOUT_SECONDS 4
 
 // ==================================================
-// DISPLAY
+// Display Configuration
 // ==================================================
 
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 240
 
+TFT_eSPI tft =
+    TFT_eSPI();
+
+static lv_disp_draw_buf_t draw_buf;
+
+static lv_color_t buf1[
+    SCREEN_WIDTH * 5
+];
 
 // ==================================================
-// TOUCH CALIBRATION
+// Touch Calibration
 // ==================================================
 
-uint16_t calData[5] = {
+static uint16_t calData[5] =
+{
     351,
     3465,
     306,
@@ -37,27 +47,21 @@ uint16_t calData[5] = {
     7
 };
 
-
 // ==================================================
-// LVGL DRAW BUFFER
-// ==================================================
-
-static lv_disp_draw_buf_t draw_buf;
-
-static lv_color_t buf[SCREEN_WIDTH * 20];
-
-
-// ==================================================
-// DISPLAY FLUSH
+// LVGL Display Flush
 // ==================================================
 
-void my_disp_flush(
+static void my_disp_flush(
     lv_disp_drv_t *disp,
     const lv_area_t *area,
-    lv_color_t *color_p)
+    lv_color_t *color_p
+)
 {
-    uint32_t w = area->x2 - area->x1 + 1;
-    uint32_t h = area->y2 - area->y1 + 1;
+    uint32_t w =
+        area->x2 - area->x1 + 1;
+
+    uint32_t h =
+        area->y2 - area->y1 + 1;
 
     tft.startWrite();
 
@@ -69,203 +73,181 @@ void my_disp_flush(
     );
 
     tft.pushColors(
-        (uint16_t *)color_p,
+        (uint16_t *)&color_p->full,
         w * h,
         true
     );
 
     tft.endWrite();
 
-    lv_disp_flush_ready(disp);
+    lv_disp_flush_ready(
+        disp
+    );
 }
 
-
 // ==================================================
-// TOUCH READ
+// LVGL Touch Input
 // ==================================================
 
-void my_touchpad_read(
+static void my_touchpad_read(
     lv_indev_drv_t *indev_drv,
-    lv_indev_data_t *data)
+    lv_indev_data_t *data
+)
 {
     uint16_t x;
     uint16_t y;
 
-    bool pressed = tft.getTouch(&x, &y);
+    (void)indev_drv;
 
-    if (pressed)
+    if (tft.getTouch(&x, &y))
     {
-        data->point.x = x;
-        data->point.y = y;
+        data->state =
+            LV_INDEV_STATE_PR;
 
-        data->state = LV_INDEV_STATE_PR;
+        data->point.x =
+            x;
+
+        data->point.y =
+            y;
     }
     else
     {
-        data->state = LV_INDEV_STATE_REL;
+        data->state =
+            LV_INDEV_STATE_REL;
     }
 }
 
-
 // ==================================================
-// SETUP
+// Setup
 // ==================================================
 
 void setup()
 {
-    // ==================================================
-    // UART
-    // ==================================================
+    // --------------------------------------------------
+    // Serial / UART
+    // --------------------------------------------------
 
     serial_init();
 
-    Serial.println();
-    Serial.println("================================");
-    Serial.println("ESP8266 + LVGL + TFT + TOUCH");
-    Serial.println("================================");
+    // --------------------------------------------------
+    // Enable watchdog
+    // --------------------------------------------------
 
+    ESP.wdtEnable(
+        WDT_TIMEOUT_SECONDS * 1000
+    );
 
-    // ==================================================
-    // TFT
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize TFT
+    // --------------------------------------------------
 
     tft.begin();
 
     tft.setRotation(1);
 
-    // اعمال Calibration اولیه
-    tft.setTouch(calData);
+    tft.setTouch(
+        calData
+    );
 
-    tft.fillScreen(TFT_BLACK);
-
-    Serial.println("TFT initialized");
-
-
-    // ==================================================
-    // LVGL
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize LVGL
+    // --------------------------------------------------
 
     lv_init();
 
-    Serial.println("LVGL initialized");
-
-
-    // ==================================================
-    // DRAW BUFFER
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize LVGL draw buffer
+    // --------------------------------------------------
 
     lv_disp_draw_buf_init(
         &draw_buf,
-        buf,
+        buf1,
         NULL,
-        SCREEN_WIDTH * 10
+        SCREEN_WIDTH * 5
     );
 
-
-    // ==================================================
-    // DISPLAY DRIVER
-    // ==================================================
+    // --------------------------------------------------
+    // Register display driver
+    // --------------------------------------------------
 
     static lv_disp_drv_t disp_drv;
 
-    lv_disp_drv_init(&disp_drv);
+    lv_disp_drv_init(
+        &disp_drv
+    );
 
-    disp_drv.hor_res = SCREEN_WIDTH;
-    disp_drv.ver_res = SCREEN_HEIGHT;
+    disp_drv.hor_res =
+        SCREEN_WIDTH;
 
-    disp_drv.flush_cb = my_disp_flush;
+    disp_drv.ver_res =
+        SCREEN_HEIGHT;
 
-    disp_drv.draw_buf = &draw_buf;
+    disp_drv.flush_cb =
+        my_disp_flush;
 
-    // مناسب برای ESP8266
-    disp_drv.full_refresh = 0;
+    disp_drv.draw_buf =
+        &draw_buf;
 
-    lv_disp_drv_register(&disp_drv);
+    lv_disp_drv_register(
+        &disp_drv
+    );
 
-    Serial.println("Display driver registered");
-
-
-    // ==================================================
-    // TOUCH DRIVER
-    // ==================================================
+    // --------------------------------------------------
+    // Register touch driver
+    // --------------------------------------------------
 
     static lv_indev_drv_t indev_drv;
 
-    lv_indev_drv_init(&indev_drv);
+    lv_indev_drv_init(
+        &indev_drv
+    );
 
-    indev_drv.type = LV_INDEV_TYPE_POINTER;
+    indev_drv.type =
+        LV_INDEV_TYPE_POINTER;
 
-    indev_drv.read_cb = my_touchpad_read;
+    indev_drv.read_cb =
+        my_touchpad_read;
 
-    lv_indev_drv_register(&indev_drv);
+    lv_indev_drv_register(
+        &indev_drv
+    );
 
-    Serial.println("Touch driver registered");
-
-
-    // ==================================================
-    // EEZ STUDIO UI
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize EEZ UI
+    // --------------------------------------------------
 
     ui_init();
 
-    Serial.println("EEZ Studio UI initialized");
+    // --------------------------------------------------
+    // Initialize screen manager
+    // --------------------------------------------------
 
+    screen_manager_init();
 
-    // ==================================================
-    // CHECK MAIN PAGE LABEL
-    // ==================================================
+    // --------------------------------------------------
+    // Initialize application tasks
+    // --------------------------------------------------
 
-    if (objects.main_page_label != NULL)
-    {
-        Serial.println("Main Page label found");
-    }
-    else
-    {
-        Serial.println("ERROR: Main Page label not found!");
-    }
-
-
-    // ==================================================
-    // SETUP COMPLETE
-    // ==================================================
-
-    Serial.println("--------------------------------");
-    Serial.println("Setup complete");
-    Serial.println("Send text from Serial Monitor...");
-    Serial.println("--------------------------------");
+    tasks_init();
 }
 
-
 // ==================================================
-// LOOP
+// Main Loop
 // ==================================================
 
 void loop()
 {
-    // ==================================================
-    // UART
-    // ==================================================
+    // Keep watchdog alive
+    ESP.wdtFeed();
 
-    uart_receive();
+    // Run application tasks
+    tasks_run();
 
-
-    // ==================================================
-    // LVGL
-    // ==================================================
-
+    // Process LVGL
     lv_timer_handler();
 
+    // Keep watchdog alive
+    ESP.wdtFeed();
 
-    // ==================================================
-    // EEZ STUDIO
-    // ==================================================
-
-    ui_tick();
-
-
-    // ==================================================
-    // Small delay
-    // ==================================================
-
-    delay(5);
+    yield();
 }
