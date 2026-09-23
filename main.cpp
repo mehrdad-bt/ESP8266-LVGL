@@ -25,13 +25,21 @@ extern "C"
 #define SCREEN_WIDTH  320
 #define SCREEN_HEIGHT 240
 
-TFT_eSPI tft =
-    TFT_eSPI();
+// --------------------------------------------------
+// LVGL Draw Buffer
+// RGB565 = 2 bytes per pixel
+//
+// 320 x 10 x 2 = 6400 bytes
+// --------------------------------------------------
+
+#define LVGL_BUF_LINES 20
+
+TFT_eSPI tft = TFT_eSPI();
 
 static lv_disp_draw_buf_t draw_buf;
 
 static lv_color_t buf1[
-    SCREEN_WIDTH * 20
+    SCREEN_WIDTH * LVGL_BUF_LINES
 ];
 
 // ==================================================
@@ -63,7 +71,15 @@ static void my_disp_flush(
     uint32_t h =
         area->y2 - area->y1 + 1;
 
+    // --------------------------------------------------
+    // Start SPI transaction
+    // --------------------------------------------------
+
     tft.startWrite();
+
+    // --------------------------------------------------
+    // Set display drawing window
+    // --------------------------------------------------
 
     tft.setAddrWindow(
         area->x1,
@@ -72,13 +88,25 @@ static void my_disp_flush(
         h
     );
 
+    // --------------------------------------------------
+    // Send pixel data
+    // --------------------------------------------------
+
     tft.pushColors(
         (uint16_t *)&color_p->full,
         w * h,
         true
     );
 
+    // --------------------------------------------------
+    // End SPI transaction
+    // --------------------------------------------------
+
     tft.endWrite();
+
+    // --------------------------------------------------
+    // Tell LVGL that flushing is finished
+    // --------------------------------------------------
 
     lv_disp_flush_ready(
         disp
@@ -98,6 +126,10 @@ static void my_touchpad_read(
     uint16_t y;
 
     (void)indev_drv;
+
+    // --------------------------------------------------
+    // Read touch
+    // --------------------------------------------------
 
     if (tft.getTouch(&x, &y))
     {
@@ -124,13 +156,13 @@ static void my_touchpad_read(
 void setup()
 {
     // --------------------------------------------------
-    // Serial / UART
+    // Initialize Serial / UART
     // --------------------------------------------------
 
     serial_init();
 
     // --------------------------------------------------
-    // Enable watchdog
+    // Enable ESP8266 watchdog
     // --------------------------------------------------
 
     ESP.wdtEnable(
@@ -143,7 +175,13 @@ void setup()
 
     tft.begin();
 
+    // Landscape
+    // 320 x 240
     tft.setRotation(1);
+
+    // --------------------------------------------------
+    // Initialize Touch
+    // --------------------------------------------------
 
     tft.setTouch(
         calData
@@ -155,20 +193,20 @@ void setup()
 
     lv_init();
 
-    // --------------------------------------------------
-    // Initialize LVGL draw buffer
-    // --------------------------------------------------
+    // ==================================================
+    // LVGL Draw Buffer
+    // ==================================================
 
     lv_disp_draw_buf_init(
         &draw_buf,
         buf1,
         NULL,
-        SCREEN_WIDTH * 10
+        SCREEN_WIDTH * LVGL_BUF_LINES
     );
 
-    // --------------------------------------------------
-    // Register display driver
-    // --------------------------------------------------
+    // ==================================================
+    // Register LVGL Display Driver
+    // ==================================================
 
     static lv_disp_drv_t disp_drv;
 
@@ -192,9 +230,9 @@ void setup()
         &disp_drv
     );
 
-    // --------------------------------------------------
-    // Register touch driver
-    // --------------------------------------------------
+    // ==================================================
+    // Register LVGL Touch Driver
+    // ==================================================
 
     static lv_indev_drv_t indev_drv;
 
@@ -212,26 +250,35 @@ void setup()
         &indev_drv
     );
 
-    // --------------------------------------------------
-    // Initialize EEZ UI
-    // --------------------------------------------------
+    // ==================================================
+    // Initialize EEZ Studio UI
+    // ==================================================
 
     ui_init();
 
-    // --------------------------------------------------
-    // LED diagnostic style
-    // Keep the LED visible, but disable complex drawing
-    // features before screen_manager_init() forces a redraw.
-    // --------------------------------------------------
+    // ==================================================
+    // LED Diagnostic Style
+    //
+    // Keep LED visible but disable expensive
+    // visual properties before screen manager redraw.
+    // ==================================================
 
     if (objects.obj0 != NULL)
     {
+        // ------------------------------------------------
+        // Disable rounded corners
+        // ------------------------------------------------
+
         lv_obj_set_style_radius(
             objects.obj0,
             0,
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
+
+        // ------------------------------------------------
+        // Disable shadow
+        // ------------------------------------------------
 
         lv_obj_set_style_shadow_width(
             objects.obj0,
@@ -247,12 +294,20 @@ void setup()
             LV_STATE_DEFAULT
         );
 
+        // ------------------------------------------------
+        // Disable border
+        // ------------------------------------------------
+
         lv_obj_set_style_border_width(
             objects.obj0,
             0,
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
+
+        // ------------------------------------------------
+        // Full background opacity
+        // ------------------------------------------------
 
         lv_obj_set_style_bg_opa(
             objects.obj0,
@@ -262,15 +317,15 @@ void setup()
         );
     }
 
-    // --------------------------------------------------
-    // Initialize screen manager
-    // --------------------------------------------------
+    // ==================================================
+    // Initialize Screen Manager
+    // ==================================================
 
     screen_manager_init();
 
-    // --------------------------------------------------
-    // Initialize application tasks
-    // --------------------------------------------------
+    // ==================================================
+    // Initialize Application Tasks
+    // ==================================================
 
     tasks_init();
 }
@@ -281,17 +336,33 @@ void setup()
 
 void loop()
 {
+    // --------------------------------------------------
     // Keep watchdog alive
+    // --------------------------------------------------
+
     ESP.wdtFeed();
 
+    // --------------------------------------------------
     // Run application tasks
+    // --------------------------------------------------
+
     tasks_run();
 
+    // --------------------------------------------------
     // Process LVGL
+    // --------------------------------------------------
+
     lv_timer_handler();
 
-    // Keep watchdog alive
+    // --------------------------------------------------
+    // Feed watchdog again
+    // --------------------------------------------------
+
     ESP.wdtFeed();
+
+    // --------------------------------------------------
+    // Give ESP8266 background processes CPU time
+    // --------------------------------------------------
 
     yield();
 }
