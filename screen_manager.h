@@ -28,7 +28,6 @@ bool screen_manager_is(
 
 #ifdef __cplusplus
 }
-
 #endif
 
 #endif

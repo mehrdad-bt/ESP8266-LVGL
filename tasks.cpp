@@ -1,3 +1,4 @@
+
 #include <Arduino.h>
 #include <lvgl.h>
 #include <stdio.h>
@@ -34,17 +35,12 @@ extern lv_obj_t *tick_value_change_obj;
 #define UART_TIMEOUT_MS 3000
 #define ERROR_TEXT_BLINK_MS 500
 
-#define ERROR_BOX_ANIM_MS 180
-
 // ==================================================
 // Menu Indices
 // ==================================================
 
-// Main screen
-#define MAIN_OPTION_SETTINGS   0
-#define MAIN_OPTION_HIDE_VC    1
+#define MAIN_OPTION_SETTINGS 0
 
-// Settings screen
 #define SETTINGS_OPTION_BUZZER        0
 #define SETTINGS_OPTION_CALIBRATION   1
 #define SETTINGS_OPTION_VC_RANGE      2
@@ -228,7 +224,7 @@ static bool vc_edit_mode =
     false;
 
 // ==================================================
-// LED State
+// LED Runtime State
 // ==================================================
 
 static uint32_t led_blink_color =
@@ -309,24 +305,11 @@ static uint32_t error_box_last_color =
     0xFFFFFFFFUL;
 
 // ==================================================
-// Error Box Animation State
-// ==================================================
-
-static bool error_box_animating =
-    false;
-
-// ==================================================
 // Focus Screen Cache
 // ==================================================
 
 static enum ScreensEnum last_focus_screen =
     SCREEN_ID_MAIN;
-
-static int last_main_focus_state =
-    -1;
-
-static int last_settings_focus_state =
-    -1;
 
 static int last_buzzer_focus_state =
     -1;
@@ -341,13 +324,18 @@ static bool last_vc_edit_state =
 // Forward Declarations
 // ==================================================
 
-static void update_led_state(void);
 static void update_error_box(void);
 static void update_error_text_blink(void);
 static void update_vc_range_gui(void);
 static void update_buzzer_gui(void);
 static void update_input_focus_gui(void);
-static void update_voltage_current_visibility(void);
+
+static void configure_led_simple_style(void);
+static void led_apply_color(uint32_t color);
+static void set_status_led(uint32_t color);
+static void set_status_led_blink(uint32_t color);
+static void update_led_state(void);
+static void led_task(void);
 
 static ErrorType get_error_type(void);
 
@@ -358,21 +346,12 @@ static bool buzzer_screen_active(void);
 static void init_error_msgbox(void);
 static void set_error_text(const char *text);
 
-static void error_box_show_animation(void);
-static void error_box_hide(void);
-
 static void buttons_task(void);
 
 static void buzzer_dropdown_find(void);
 static void buzzer_dropdown_change(int direction);
 
 static void vc_change_value(void);
-
-static void clear_main_focus(void);
-static void apply_main_focus(void);
-
-static void clear_settings_highlight(void);
-static void apply_settings_highlight(void);
 
 static void clear_buzzer_focus(void);
 static void apply_buzzer_focus(void);
@@ -407,377 +386,6 @@ static bool buzzer_screen_active(void)
 {
     return screen_manager_get() ==
            SCREEN_ID_BUZZER_SETTINGS;
-}
-
-// ==================================================
-// Voltage / Current Visibility
-// ==================================================
-
-static void update_voltage_current_visibility(void)
-{
-    if (objects.voltage_current_hide == NULL)
-    {
-        return;
-    }
-
-    bool hide =
-        lv_obj_has_state(
-            objects.voltage_current_hide,
-            LV_STATE_CHECKED
-        );
-
-    // --------------------------------------------------
-    // Voltage value
-    // --------------------------------------------------
-
-    if (objects.voltage != NULL)
-    {
-        if (hide)
-        {
-            lv_obj_add_flag(
-                objects.voltage,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-        else
-        {
-            lv_obj_clear_flag(
-                objects.voltage,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-    }
-
-    // --------------------------------------------------
-    // Current value
-    // --------------------------------------------------
-
-    if (objects.current != NULL)
-    {
-        if (hide)
-        {
-            lv_obj_add_flag(
-                objects.current,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-        else
-        {
-            lv_obj_clear_flag(
-                objects.current,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-    }
-
-    // --------------------------------------------------
-    // Voltage title
-    // --------------------------------------------------
-
-    if (objects.voltage_label_main != NULL)
-    {
-        if (hide)
-        {
-            lv_obj_add_flag(
-                objects.voltage_label_main,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-        else
-        {
-            lv_obj_clear_flag(
-                objects.voltage_label_main,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-    }
-
-    // --------------------------------------------------
-    // Current title
-    // --------------------------------------------------
-
-    if (objects.current_label_main != NULL)
-    {
-        if (hide)
-        {
-            lv_obj_add_flag(
-                objects.current_label_main,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-        else
-        {
-            lv_obj_clear_flag(
-                objects.current_label_main,
-                LV_OBJ_FLAG_HIDDEN
-            );
-        }
-    }
-}
-
-// ==================================================
-// Main Screen Focus
-// ==================================================
-
-static void clear_main_focus(void)
-{
-    // --------------------------------------------------
-    // Settings button
-    // --------------------------------------------------
-
-    if (objects.btn_settings != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.btn_settings,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_border_width(
-            objects.btn_settings,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_PRESSED
-        );
-    }
-
-    // --------------------------------------------------
-    // Hide V/C switch
-    // --------------------------------------------------
-
-    if (objects.voltage_current_hide != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.voltage_current_hide,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_border_width(
-            objects.voltage_current_hide,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_CHECKED
-        );
-    }
-}
-
-static void apply_main_focus(void)
-{
-    if (!main_screen_active())
-    {
-        return;
-    }
-
-    clear_main_focus();
-
-    lv_obj_t *selected =
-        NULL;
-
-    switch (main_selection)
-    {
-        case MAIN_OPTION_SETTINGS:
-
-            selected =
-                objects.btn_settings;
-
-            break;
-
-        case MAIN_OPTION_HIDE_VC:
-
-            selected =
-                objects.voltage_current_hide;
-
-            break;
-
-        default:
-
-            break;
-    }
-
-    if (selected == NULL)
-    {
-        return;
-    }
-
-    // --------------------------------------------------
-    // Normal state
-    // --------------------------------------------------
-
-    lv_obj_set_style_border_width(
-        selected,
-        2,
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    lv_obj_set_style_border_color(
-        selected,
-        lv_color_hex(
-            FOCUS_COLOR
-        ),
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    // --------------------------------------------------
-    // Checked state
-    // --------------------------------------------------
-
-    lv_obj_set_style_border_width(
-        selected,
-        2,
-        LV_PART_MAIN |
-        LV_STATE_CHECKED
-    );
-
-    lv_obj_set_style_border_color(
-        selected,
-        lv_color_hex(
-            FOCUS_COLOR
-        ),
-        LV_PART_MAIN |
-        LV_STATE_CHECKED
-    );
-
-    // --------------------------------------------------
-    // Pressed state
-    // --------------------------------------------------
-
-    lv_obj_set_style_border_width(
-        selected,
-        2,
-        LV_PART_MAIN |
-        LV_STATE_PRESSED
-    );
-
-    lv_obj_set_style_border_color(
-        selected,
-        lv_color_hex(
-            FOCUS_COLOR
-        ),
-        LV_PART_MAIN |
-        LV_STATE_PRESSED
-    );
-}
-
-// ==================================================
-// Settings Focus
-// ==================================================
-
-static void clear_settings_highlight(void)
-{
-    if (objects.buzzer != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.buzzer,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-
-    if (objects.touch_calibration != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.touch_calibration,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-
-    if (objects.voltage_range != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.voltage_range,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-
-    if (objects.exit_settings != NULL)
-    {
-        lv_obj_set_style_border_width(
-            objects.exit_settings,
-            0,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
-}
-
-static void apply_settings_highlight(void)
-{
-    if (
-        screen_manager_get() !=
-        SCREEN_ID_SETTINGS_PAGE
-    )
-    {
-        return;
-    }
-
-    clear_settings_highlight();
-
-    lv_obj_t *selected =
-        NULL;
-
-    switch (settings_selection)
-    {
-        case SETTINGS_OPTION_BUZZER:
-
-            selected =
-                objects.buzzer;
-
-            break;
-
-        case SETTINGS_OPTION_CALIBRATION:
-
-            selected =
-                objects.touch_calibration;
-
-            break;
-
-        case SETTINGS_OPTION_VC_RANGE:
-
-            selected =
-                objects.voltage_range;
-
-            break;
-
-        case SETTINGS_OPTION_BACK:
-
-            selected =
-                objects.exit_settings;
-
-            break;
-
-        default:
-
-            break;
-    }
-
-    if (selected != NULL)
-    {
-        lv_obj_set_style_border_width(
-            selected,
-            2,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_border_color(
-            selected,
-            lv_color_hex(
-                FOCUS_COLOR
-            ),
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-    }
 }
 
 // ==================================================
@@ -856,9 +464,7 @@ static void init_error_msgbox(void)
 
     lv_obj_set_style_text_color(
         error_msg_label,
-        lv_color_hex(
-            0xFFFFFF
-        ),
+        lv_color_hex(0xFFFFFF),
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
@@ -895,148 +501,6 @@ static void init_error_msgbox(void)
 }
 
 // ==================================================
-// Error Box Show Animation
-// ==================================================
-
-static void error_box_show_animation(void)
-{
-    if (objects.error_box == NULL)
-    {
-        return;
-    }
-
-    lv_anim_del(
-        objects.error_box,
-        NULL
-    );
-
-    error_box_animating =
-        true;
-
-    lv_obj_set_style_transform_pivot_x(
-        objects.error_box,
-        lv_obj_get_width(
-            objects.error_box
-        ) / 2,
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    lv_obj_set_style_transform_pivot_y(
-        objects.error_box,
-        lv_obj_get_height(
-            objects.error_box
-        ) / 2,
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    lv_obj_set_style_transform_zoom(
-        objects.error_box,
-        192,
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    lv_anim_t anim;
-
-    lv_anim_init(
-        &anim
-    );
-
-    lv_anim_set_var(
-        &anim,
-        objects.error_box
-    );
-
-    lv_anim_set_exec_cb(
-        &anim,
-        [](void *obj, int32_t value)
-        {
-            lv_obj_set_style_transform_zoom(
-                (lv_obj_t *)obj,
-                value,
-                LV_PART_MAIN |
-                LV_STATE_DEFAULT
-            );
-        }
-    );
-
-    lv_anim_set_values(
-        &anim,
-        192,
-        256
-    );
-
-    lv_anim_set_time(
-        &anim,
-        ERROR_BOX_ANIM_MS
-    );
-
-    lv_anim_set_path_cb(
-        &anim,
-        lv_anim_path_ease_out
-    );
-
-    lv_anim_set_ready_cb(
-        &anim,
-        [](lv_anim_t *a)
-        {
-            (void)a;
-
-            error_box_animating =
-                false;
-
-            if (objects.error_box != NULL)
-            {
-                lv_obj_set_style_transform_zoom(
-                    objects.error_box,
-                    256,
-                    LV_PART_MAIN |
-                    LV_STATE_DEFAULT
-                );
-            }
-        }
-    );
-
-    lv_anim_start(
-        &anim
-    );
-}
-
-// ==================================================
-// Error Box Hide
-// ==================================================
-
-static void error_box_hide(void)
-{
-    if (objects.error_box == NULL)
-    {
-        return;
-    }
-
-    lv_anim_del(
-        objects.error_box,
-        NULL
-    );
-
-    error_box_animating =
-        false;
-
-    lv_obj_set_style_transform_zoom(
-        objects.error_box,
-        256,
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
-
-    lv_obj_add_flag(
-        objects.error_box,
-        LV_OBJ_FLAG_HIDDEN
-    );
-}
-
-// ==================================================
 // Set Error Message Text
 // ==================================================
 
@@ -1058,9 +522,7 @@ static void set_error_text(
 
         lv_obj_set_style_text_color(
             error_msg_label,
-            lv_color_hex(
-                0xFFFFFF
-            ),
+            lv_color_hex(0xFFFFFF),
             LV_PART_MAIN |
             LV_STATE_DEFAULT
         );
@@ -1129,9 +591,7 @@ static void update_error_text_blink(void)
 
     lv_obj_set_style_text_color(
         error_msg_label,
-        lv_color_hex(
-            color
-        ),
+        lv_color_hex(color),
         LV_PART_MAIN |
         LV_STATE_DEFAULT
     );
@@ -1141,9 +601,7 @@ static void update_error_text_blink(void)
 // Buzzer Mode Control
 // ==================================================
 
-void buzzer_set_mode(
-    uint8_t mode
-)
+void buzzer_set_mode(uint8_t mode)
 {
     if (mode > BUZZER_MODE_3)
     {
@@ -1164,9 +622,7 @@ uint8_t buzzer_get_mode(void)
 // Voltage Limit Setters
 // ==================================================
 
-void set_voltage_min_limit(
-    float value
-)
+void set_voltage_min_limit(float value)
 {
     if (value < VOLTAGE_LIMIT_MIN)
     {
@@ -1184,9 +640,7 @@ void set_voltage_min_limit(
         value;
 }
 
-void set_voltage_max_limit(
-    float value
-)
+void set_voltage_max_limit(float value)
 {
     if (value < VOLTAGE_LIMIT_MIN)
     {
@@ -1218,9 +672,7 @@ float get_voltage_max_limit(void)
 // Current Limit Setters
 // ==================================================
 
-void set_current_min_limit(
-    float value
-)
+void set_current_min_limit(float value)
 {
     if (value < CURRENT_LIMIT_MIN)
     {
@@ -1238,9 +690,7 @@ void set_current_min_limit(
         value;
 }
 
-void set_current_max_limit(
-    float value
-)
+void set_current_max_limit(float value)
 {
     if (value < CURRENT_LIMIT_MIN)
     {
@@ -1554,15 +1004,75 @@ static void update_buzzer_gui(void)
 }
 
 // ==================================================
+// LED Simple Style
+// ==================================================
+
+static void configure_led_simple_style(void)
+{
+    if (objects.obj0 == NULL)
+        return;
+
+    /* Circle */
+    lv_obj_set_style_radius(
+        objects.obj0,
+        LV_RADIUS_CIRCLE,
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+
+    /* Full background */
+    lv_obj_set_style_bg_opa(
+        objects.obj0,
+        LV_OPA_COVER,
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+
+    /* Disable shadow */
+    lv_obj_set_style_shadow_width(
+        objects.obj0,
+        0,
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+
+    lv_obj_set_style_shadow_spread(
+        objects.obj0,
+        0,
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+
+    /* No border */
+    lv_obj_set_style_border_width(
+        objects.obj0,
+        0,
+        LV_PART_MAIN | LV_STATE_DEFAULT
+    );
+}
+
+// ==================================================
 // LED Output
 // ==================================================
 
 static void led_apply_color(uint32_t color)
 {
-    (void)color;
-    // Temporarily disabled: LVGL LED object is the crash path.
-}
+    if (!main_screen_active())
+    {
+        return;
+    }
 
+    if (objects.obj0 == NULL)
+    {
+        return;
+    }
+
+    lv_led_set_color(
+        objects.obj0,
+        lv_color_hex(color)
+    );
+
+    lv_led_set_brightness(
+        objects.obj0,
+        255
+    );
+}
 
 // ==================================================
 // Set Solid LED
@@ -1570,13 +1080,22 @@ static void led_apply_color(uint32_t color)
 
 static void set_status_led(uint32_t color)
 {
-    led_blink_color = color;
-    led_blink_enable = false;
-    led_blink_state = true;
-    led_blink_timer = millis();
-    // Do not touch objects.obj0.
-}
+    led_blink_color =
+        color;
 
+    led_blink_enable =
+        false;
+
+    led_blink_state =
+        true;
+
+    led_blink_timer =
+        millis();
+
+    led_apply_color(
+        color
+    );
+}
 
 // ==================================================
 // Set Blinking LED
@@ -1584,18 +1103,30 @@ static void set_status_led(uint32_t color)
 
 static void set_status_led_blink(uint32_t color)
 {
-    if (led_blink_enable && led_blink_color == color)
+    if (
+        led_blink_enable &&
+        led_blink_color == color
+    )
     {
         return;
     }
 
-    led_blink_color = color;
-    led_blink_enable = true;
-    led_blink_state = true;
-    led_blink_timer = millis();
-    // Do not touch objects.obj0.
-}
+    led_blink_color =
+        color;
 
+    led_blink_enable =
+        true;
+
+    led_blink_state =
+        true;
+
+    led_blink_timer =
+        millis();
+
+    led_apply_color(
+        color
+    );
+}
 
 // ==================================================
 // LED Task
@@ -1603,9 +1134,152 @@ static void set_status_led_blink(uint32_t color)
 
 static void led_task(void)
 {
-    // Temporarily disabled: no LVGL LED API calls.
+    if (!main_screen_active())
+    {
+        return;
+    }
+
+    if (objects.obj0 == NULL)
+    {
+        return;
+    }
+
+    if (!led_blink_enable)
+    {
+        return;
+    }
+
+    uint32_t now =
+        millis();
+
+    if (
+        now - led_blink_timer <
+        500
+    )
+    {
+        return;
+    }
+
+    led_blink_timer =
+        now;
+
+    led_blink_state =
+        !led_blink_state;
+
+    if (led_blink_state)
+    {
+        led_apply_color(
+            led_blink_color
+        );
+    }
+    else
+    {
+        lv_led_set_brightness(
+            objects.obj0,
+            0
+        );
+    }
 }
 
+// ==================================================
+// Settings Focus
+// ==================================================
+
+static void clear_settings_highlight(void)
+{
+    if (objects.buzzer != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.buzzer,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    if (objects.touch_calibration != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.touch_calibration,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    if (objects.voltage_range != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.voltage_range,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+
+    if (objects.exit_settings != NULL)
+    {
+        lv_obj_set_style_border_width(
+            objects.exit_settings,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+}
+
+static void apply_settings_highlight(void)
+{
+    clear_settings_highlight();
+
+    lv_obj_t *selected =
+        NULL;
+
+    switch (settings_selection)
+    {
+        case SETTINGS_OPTION_BUZZER:
+            selected =
+                objects.buzzer;
+            break;
+
+        case SETTINGS_OPTION_CALIBRATION:
+            selected =
+                objects.touch_calibration;
+            break;
+
+        case SETTINGS_OPTION_VC_RANGE:
+            selected =
+                objects.voltage_range;
+            break;
+
+        case SETTINGS_OPTION_BACK:
+            selected =
+                objects.exit_settings;
+            break;
+
+        default:
+            break;
+    }
+
+    if (selected != NULL)
+    {
+        lv_obj_set_style_border_width(
+            selected,
+            2,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_border_color(
+            selected,
+            lv_color_hex(
+                FOCUS_COLOR
+            ),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
+}
 
 // ==================================================
 // Buzzer Focus
@@ -1841,63 +1515,13 @@ static void update_input_focus_gui(void)
     enum ScreensEnum current_screen =
         screen_manager_get();
 
-    // ==================================================
-    // Screen Changed
-    // ==================================================
-
     if (
         current_screen !=
         last_focus_screen
     )
     {
-        // --------------------------------------------------
-        // Clear previous focus
-        // --------------------------------------------------
-
-        clear_main_focus();
-        clear_settings_highlight();
         clear_buzzer_focus();
         clear_vc_focus();
-
-        // --------------------------------------------------
-        // MAIN
-        // --------------------------------------------------
-
-        if (
-            current_screen ==
-            SCREEN_ID_MAIN
-        )
-        {
-            main_selection =
-                MAIN_OPTION_SETTINGS;
-
-            apply_main_focus();
-
-            last_main_focus_state =
-                main_selection;
-        }
-
-        // --------------------------------------------------
-        // SETTINGS
-        // --------------------------------------------------
-
-        if (
-            current_screen ==
-            SCREEN_ID_SETTINGS_PAGE
-        )
-        {
-            settings_selection =
-                SETTINGS_OPTION_BUZZER;
-
-            apply_settings_highlight();
-
-            last_settings_focus_state =
-                settings_selection;
-        }
-
-        // --------------------------------------------------
-        // BUZZER
-        // --------------------------------------------------
 
         if (
             current_screen ==
@@ -1922,10 +1546,6 @@ static void update_input_focus_gui(void)
             apply_buzzer_focus();
         }
 
-        // --------------------------------------------------
-        // V/C
-        // --------------------------------------------------
-
         if (
             current_screen ==
             SCREEN_ID_V_C_RANGE_SETTINGS
@@ -1938,41 +1558,20 @@ static void update_input_focus_gui(void)
                 false;
 
             apply_vc_focus();
-
-            last_vc_focus_state =
-                vc_focus;
-
-            last_vc_edit_state =
-                vc_edit_mode;
         }
-
-        // --------------------------------------------------
-        // Update screen cache
-        // --------------------------------------------------
 
         last_focus_screen =
             current_screen;
 
         last_buzzer_focus_state =
             -1;
+
+        last_vc_focus_state =
+            -1;
+
+        last_vc_edit_state =
+            false;
     }
-
-    // ==================================================
-    // DO NOT repeatedly reapply Main/Settings focus
-    // ==================================================
-    //
-    // Focus is applied only:
-    // - when screen changes
-    // - when RIGHT changes selection
-    // - when SELECT changes checkbox
-    //
-    // This avoids repeated style/layout invalidation
-    // during every LVGL refresh cycle.
-    // ==================================================
-
-    // --------------------------------------------------
-    // Buzzer
-    // --------------------------------------------------
 
     if (
         current_screen ==
@@ -1995,14 +1594,9 @@ static void update_input_focus_gui(void)
 
         if (buzzer_dropdown_open)
         {
-            // Only update when the dropdown is already open.
             apply_buzzer_focus();
         }
     }
-
-    // --------------------------------------------------
-    // V/C
-    // --------------------------------------------------
 
     if (
         current_screen ==
@@ -2214,21 +1808,8 @@ static void handle_right_release(void)
         SCREEN_ID_MAIN
     )
     {
-        main_selection++;
-
-        if (
-            main_selection >
-            MAIN_OPTION_HIDE_VC
-        )
-        {
-            main_selection =
-                MAIN_OPTION_SETTINGS;
-        }
-
-        apply_main_focus();
-
-        last_main_focus_state =
-            main_selection;
+        main_selection =
+            MAIN_OPTION_SETTINGS;
 
         return;
     }
@@ -2254,9 +1835,6 @@ static void handle_right_release(void)
         }
 
         apply_settings_highlight();
-
-        last_settings_focus_state =
-            settings_selection;
 
         return;
     }
@@ -2292,9 +1870,6 @@ static void handle_right_release(void)
 
         apply_buzzer_focus();
 
-        last_buzzer_focus_state =
-            buzzer_focus_back ? 1 : 0;
-
         return;
     }
 
@@ -2324,9 +1899,6 @@ static void handle_right_release(void)
 
         apply_vc_focus();
 
-        last_vc_focus_state =
-            vc_focus;
-
         return;
     }
 }
@@ -2349,10 +1921,6 @@ static void handle_select_release(void)
         SCREEN_ID_MAIN
     )
     {
-        // --------------------------------------------------
-        // Settings
-        // --------------------------------------------------
-
         if (
             main_selection ==
             MAIN_OPTION_SETTINGS
@@ -2361,56 +1929,6 @@ static void handle_select_release(void)
             action_go_to_settings_page(
                 NULL
             );
-
-            return;
-        }
-
-        // --------------------------------------------------
-        // Hide / Show Voltage + Current
-        // --------------------------------------------------
-
-        if (
-            main_selection ==
-            MAIN_OPTION_HIDE_VC
-        )
-        {
-            if (
-                objects.voltage_current_hide != NULL
-            )
-            {
-                bool checked =
-                    lv_obj_has_state(
-                        objects.voltage_current_hide,
-                        LV_STATE_CHECKED
-                    );
-
-                if (checked)
-                {
-                    lv_obj_clear_state(
-                        objects.voltage_current_hide,
-                        LV_STATE_CHECKED
-                    );
-                }
-                else
-                {
-                    lv_obj_add_state(
-                        objects.voltage_current_hide,
-                        LV_STATE_CHECKED
-                    );
-                }
-
-                action_hide_voltage_and_current_parameters_main_screen(
-                    NULL
-                );
-
-                // Keep red focus after changing switch
-                apply_main_focus();
-
-                last_main_focus_state =
-                    main_selection;
-            }
-
-            return;
         }
 
         return;
@@ -2495,25 +2013,25 @@ static void handle_select_release(void)
                 );
 
                 apply_buzzer_focus();
-
-                return;
             }
+            else
+            {
+                buzzer_dropdown_open =
+                    false;
 
-            buzzer_dropdown_open =
-                false;
-
-            lv_dropdown_close(
-                buzzer_dropdown
-            );
-
-            set_var_buzzer_mode(
-                (int32_t)
-                lv_dropdown_get_selected(
+                lv_dropdown_close(
                     buzzer_dropdown
-                )
-            );
+                );
 
-            apply_buzzer_focus();
+                set_var_buzzer_mode(
+                    (int32_t)
+                    lv_dropdown_get_selected(
+                        buzzer_dropdown
+                    )
+                );
+
+                apply_buzzer_focus();
+            }
 
             return;
         }
@@ -2550,9 +2068,6 @@ static void handle_select_release(void)
             !vc_edit_mode;
 
         apply_vc_focus();
-
-        last_vc_edit_state =
-            vc_edit_mode;
 
         return;
     }
@@ -2999,7 +2514,10 @@ static void update_error_box(void)
             ERROR_NONE
         )
         {
-            error_box_hide();
+            lv_obj_add_flag(
+                objects.error_box,
+                LV_OBJ_FLAG_HIDDEN
+            );
 
             set_error_text(
                 ""
@@ -3035,6 +2553,10 @@ static void update_error_box(void)
 
     uint32_t color =
         LED_RED;
+
+    // --------------------------------------------------
+    // Select error message and box color
+    // --------------------------------------------------
 
     switch (error)
     {
@@ -3097,28 +2619,12 @@ static void update_error_box(void)
     }
 
     // --------------------------------------------------
-    // Hide old box before changing error
-    // --------------------------------------------------
-
-    if (
-        gui_last_error !=
-        ERROR_NONE
-    )
-    {
-        error_box_hide();
-    }
-
-    // --------------------------------------------------
     // Update error text
     // --------------------------------------------------
 
     set_error_text(
         message
     );
-
-    // --------------------------------------------------
-    // Box text color
-    // --------------------------------------------------
 
     lv_obj_set_style_text_color(
         error_msg_label,
@@ -3130,27 +2636,31 @@ static void update_error_box(void)
     );
 
     // --------------------------------------------------
-    // Box color
+    // Update box color only when necessary
     // --------------------------------------------------
 
-    lv_obj_set_style_bg_color(
-        objects.error_box,
-        lv_color_hex(
-            color
-        ),
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
+    if (
+        error_box_last_color !=
+        color
+    )
+    {
+        lv_obj_set_style_bg_color(
+            objects.error_box,
+            lv_color_hex(color),
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
 
-    lv_obj_set_style_bg_opa(
-        objects.error_box,
-        LV_OPA_60,
-        LV_PART_MAIN |
-        LV_STATE_DEFAULT
-    );
+        lv_obj_set_style_bg_opa(
+            objects.error_box,
+            LV_OPA_60,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
 
-    error_box_last_color =
-        color;
+        error_box_last_color =
+            color;
+    }
 
     // --------------------------------------------------
     // Show error box
@@ -3177,13 +2687,7 @@ static void update_error_box(void)
     }
 
     // --------------------------------------------------
-    // Animation
-    // --------------------------------------------------
-
-    error_box_show_animation();
-
-    // --------------------------------------------------
-    // Restart blinking
+    // Restart text blinking
     // --------------------------------------------------
 
     error_text_blink_timer =
@@ -3203,15 +2707,12 @@ static void update_error_box(void)
 static void gui_update(void)
 {
     // --------------------------------------------------
-    // Main screen
+    // Main screen data
     // --------------------------------------------------
 
     if (main_screen_active())
     {
-        // ----------------------------------------------
-        // Voltage
-        // ----------------------------------------------
-
+        // Voltage display
         if (
             objects.voltage != NULL &&
             system_state.voltage !=
@@ -3236,10 +2737,7 @@ static void gui_update(void)
                 system_state.voltage;
         }
 
-        // ----------------------------------------------
-        // Current
-        // ----------------------------------------------
-
+        // Current display
         if (
             objects.current != NULL &&
             system_state.current !=
@@ -3264,23 +2762,12 @@ static void gui_update(void)
                 system_state.current;
         }
 
-        // ----------------------------------------------
-        // Visibility
-        // ----------------------------------------------
-
-        update_voltage_current_visibility();
-
-        // ----------------------------------------------
-        // Error box
-        // ----------------------------------------------
-
         update_error_box();
-
         update_error_text_blink();
     }
 
     // --------------------------------------------------
-    // Other screens
+    // Settings screens
     // --------------------------------------------------
 
     update_vc_range_gui();
@@ -3312,13 +2799,10 @@ static void gui_task(void)
         now;
 
     gui_update();
-
     update_led_state();
 
-    // --------------------------------------------------
-    // EEZ Tick
-    // --------------------------------------------------
-
+    // Keep EEZ screen tick synchronized with
+    // the screen manager.
     if (!vc_range_screen_active())
     {
         int16_t screen_index =
@@ -3327,7 +2811,7 @@ static void gui_task(void)
 
         if (
             screen_index >= 0 &&
-            screen_index < 5
+            screen_index < 4
         )
         {
             tick_screen(
@@ -3348,36 +2832,59 @@ static void update_led_state(void)
         return;
     }
 
-    ErrorType error = get_error_type();
+    ErrorType error =
+        get_error_type();
 
-    if (error == led_last_state)
+    if (
+        error ==
+        led_last_state
+    )
     {
         return;
     }
 
-    led_last_state = error;
+    led_last_state =
+        error;
 
-    if (error == ERROR_CONNECTION)
+    if (
+        error ==
+        ERROR_CONNECTION
+    )
     {
-        set_status_led_blink(LED_ORANGE);
+        set_status_led_blink(
+            LED_ORANGE
+        );
+
         return;
     }
 
-    if (!system_state.data_received)
+    if (
+        !system_state.data_received
+    )
     {
-        set_status_led(LED_BLUE);
+        set_status_led(
+            LED_BLUE
+        );
+
         return;
     }
 
-    if (error == ERROR_NONE)
+    if (
+        error ==
+        ERROR_NONE
+    )
     {
-        set_status_led(LED_GREEN);
+        set_status_led(
+            LED_GREEN
+        );
+
         return;
     }
 
-    set_status_led_blink(LED_RED);
+    set_status_led_blink(
+        LED_RED
+    );
 }
-
 
 // ==================================================
 // Task System Initialization
@@ -3386,7 +2893,7 @@ static void update_led_state(void)
 void tasks_init(void)
 {
     // --------------------------------------------------
-    // Hardware Inputs
+    // Initialize hardware inputs
     // --------------------------------------------------
 
     pinMode(
@@ -3400,7 +2907,7 @@ void tasks_init(void)
     );
 
     // --------------------------------------------------
-    // Buzzer
+    // Initialize buzzer
     // --------------------------------------------------
 
     pinMode(
@@ -3413,7 +2920,7 @@ void tasks_init(void)
     );
 
     // --------------------------------------------------
-    // Initial Buttons
+    // Read initial button states
     // --------------------------------------------------
 
     right_last_state =
@@ -3433,13 +2940,10 @@ void tasks_init(void)
         millis();
 
     // --------------------------------------------------
-    // Timers
+    // Initialize timers
     // --------------------------------------------------
 
     buzzer_timer =
-        millis();
-
-    led_blink_timer =
         millis();
 
     error_text_blink_timer =
@@ -3449,7 +2953,7 @@ void tasks_init(void)
         true;
 
     // --------------------------------------------------
-    // Buzzer Dropdown
+    // Initialize buzzer dropdown
     // --------------------------------------------------
 
     buzzer_dropdown_find();
@@ -3463,19 +2967,42 @@ void tasks_init(void)
     }
 
     // --------------------------------------------------
-    // Status LED
+    // Initialize status LED
     // --------------------------------------------------
+
+    configure_led_simple_style();
 
     if (objects.obj0 != NULL)
     {
-        lv_obj_add_flag(
+        lv_led_set_color(
             objects.obj0,
-            LV_OBJ_FLAG_HIDDEN
+            lv_color_hex(
+                LED_BLUE
+            )
+        );
+
+        lv_led_set_brightness(
+            objects.obj0,
+            255
         );
     }
 
-    // --------------------------------------------------
-    // Error Message Box
+    led_blink_color =
+        LED_BLUE;
+
+    led_blink_state =
+        true;
+
+    led_blink_enable =
+        false;
+
+    led_blink_timer =
+        millis();
+
+    led_last_state =
+        ERROR_NONE;
+
+    // Initialize error message box
     // --------------------------------------------------
 
     if (objects.error_box != NULL)
@@ -3502,7 +3029,7 @@ void tasks_init(void)
         );
 
         // ------------------------------------------------
-        // Shadow
+        // Small shadow under Error Box
         // ------------------------------------------------
 
         lv_obj_set_style_shadow_width(
@@ -3542,42 +3069,14 @@ void tasks_init(void)
             LV_STATE_DEFAULT
         );
 
-        // ------------------------------------------------
-        // Initial transform
-        // ------------------------------------------------
-
-        lv_obj_set_style_transform_pivot_x(
-            objects.error_box,
-            90,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_transform_pivot_y(
-            objects.error_box,
-            50,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
-        lv_obj_set_style_transform_zoom(
-            objects.error_box,
-            256,
-            LV_PART_MAIN |
-            LV_STATE_DEFAULT
-        );
-
         error_box_last_color =
             LED_RED;
-
-        error_box_animating =
-            false;
 
         init_error_msgbox();
     }
 
     // --------------------------------------------------
-    // Hide EEZ Error Label
+    // Hide unused EEZ error label
     // --------------------------------------------------
 
     if (objects.error_label != NULL)
@@ -3589,34 +3088,10 @@ void tasks_init(void)
     }
 
     // --------------------------------------------------
-    // V/C Visibility
+    // Initialize menu focus
     // --------------------------------------------------
 
-    update_voltage_current_visibility();
-
-    // --------------------------------------------------
-    // Main Menu
-    // --------------------------------------------------
-
-    main_selection =
-        MAIN_OPTION_SETTINGS;
-
-    last_main_focus_state =
-        -1;
-
-    // --------------------------------------------------
-    // Settings Menu
-    // --------------------------------------------------
-
-    settings_selection =
-        SETTINGS_OPTION_BUZZER;
-
-    last_settings_focus_state =
-        -1;
-
-    // --------------------------------------------------
-    // Buzzer State
-    // --------------------------------------------------
+    apply_settings_highlight();
 
     buzzer_focus_back =
         false;
@@ -3624,27 +3099,14 @@ void tasks_init(void)
     buzzer_dropdown_open =
         false;
 
-    last_buzzer_focus_state =
-        -1;
-
-    // --------------------------------------------------
-    // V/C State
-    // --------------------------------------------------
-
     vc_focus =
         0;
 
     vc_edit_mode =
         false;
 
-    last_vc_focus_state =
-        -1;
-
-    last_vc_edit_state =
-        false;
-
     // --------------------------------------------------
-    // GUI Cache Reset
+    // Reset GUI caches
     // --------------------------------------------------
 
     gui_last_voltage_min =
@@ -3677,28 +3139,18 @@ void tasks_init(void)
     gui_last_error =
         ERROR_NONE;
 
-    // --------------------------------------------------
-    // Focus Cache
-    // --------------------------------------------------
-
     last_focus_screen =
         SCREEN_ID_MAIN;
 
-    // --------------------------------------------------
-    // LED Cache
-    // --------------------------------------------------
+    last_buzzer_focus_state =
+        -1;
 
-    led_last_state =
-        ERROR_NONE;
+    last_vc_focus_state =
+        -1;
 
-    // --------------------------------------------------
-    // Apply Initial Main Focus Once
-    // --------------------------------------------------
+    last_vc_edit_state =
+        false;
 
-    apply_main_focus();
-
-    last_main_focus_state =
-        main_selection;
 }
 
 // ==================================================
@@ -3707,45 +3159,24 @@ void tasks_init(void)
 
 void tasks_run(void)
 {
-    // --------------------------------------------------
     // Read physical buttons
-    // --------------------------------------------------
-
     buttons_task();
 
-    // --------------------------------------------------
     // Receive UART data
-    // --------------------------------------------------
-
     uart_task();
 
-    // --------------------------------------------------
     // Validate system conditions
-    // --------------------------------------------------
-
     safety_task();
 
-    // --------------------------------------------------
-    // Control buzzer
-    // --------------------------------------------------
-
+    // Control buzzer output
     buzzer_task();
 
-    // --------------------------------------------------
     // Apply pending screen changes
-    // --------------------------------------------------
-
     screen_manager_process();
 
-    // --------------------------------------------------
-    // Update GUI
-    // --------------------------------------------------
-
+    // Update user interface
     gui_task();
 
-    // --------------------------------------------------
     // Update status LED
-    // --------------------------------------------------
-
     led_task();
 }

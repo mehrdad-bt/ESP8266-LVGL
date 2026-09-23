@@ -158,7 +158,7 @@ void create_screen_main() {
         }
         {
             // Error Box
-            lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, false);
+            lv_obj_t *obj = lv_msgbox_create(parent_obj, "", "", 0, true);
             objects.error_box = obj;
             lv_obj_set_pos(obj, 39, 56);
             lv_obj_set_size(obj, 235, 132);
@@ -186,6 +186,7 @@ void create_screen_settings_page() {
     objects.settings_page = obj;
     lv_obj_set_pos(obj, 0, 0);
     lv_obj_set_size(obj, 320, 240);
+    lv_obj_add_event_cb(obj, action_go_to_themes_page, LV_EVENT_RELEASED, (void *)0);
     lv_obj_set_style_bg_color(obj, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
     {
         lv_obj_t *parent_obj = obj;
