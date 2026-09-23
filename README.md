@@ -1,1 +1,1 @@
-Stable- black theme - optimized screen speed
+Stable- Dark theme - optimized screen speed
