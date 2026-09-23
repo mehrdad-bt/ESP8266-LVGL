@@ -46,59 +46,8 @@ static lv_obj_t *get_screen_object(
         case SCREEN_ID_V_C_RANGE_SETTINGS:
             return objects.v_c_range_settings;
 
-        case SCREEN_ID_THEMES:
-            return objects.themes;
-
         default:
             return NULL;
-    }
-}
-
-// ==================================================
-// Print Screen Name
-// ==================================================
-
-static void print_screen_name(
-    enum ScreensEnum screen
-)
-{
-    switch (screen)
-    {
-        case SCREEN_ID_MAIN:
-            Serial.println(
-                "MAIN"
-            );
-            break;
-
-        case SCREEN_ID_SETTINGS_PAGE:
-            Serial.println(
-                "SETTINGS"
-            );
-            break;
-
-        case SCREEN_ID_BUZZER_SETTINGS:
-            Serial.println(
-                "BUZZER"
-            );
-            break;
-
-        case SCREEN_ID_V_C_RANGE_SETTINGS:
-            Serial.println(
-                "V/C RANGE"
-            );
-            break;
-
-        case SCREEN_ID_THEMES:
-            Serial.println(
-                "THEMES"
-            );
-            break;
-
-        default:
-            Serial.println(
-                "UNKNOWN"
-            );
-            break;
     }
 }
 
@@ -117,47 +66,23 @@ static void load_screen_now(
 
     if (screen_obj == NULL)
     {
-        Serial.println(
-            "SCREEN ERROR: NULL SCREEN OBJECT"
-        );
-
         return;
     }
-
-    Serial.print(
-        "SCREEN APPLY START -> "
-    );
-
-    print_screen_name(
-        screen
-    );
-
-    // ------------------------------------------------
-    // Load screen
-    // ------------------------------------------------
 
     lv_scr_load(
         screen_obj
     );
 
-    // ------------------------------------------------
-    // Update current screen state
-    // ------------------------------------------------
-
-    current_screen =
-        screen;
-
-    // ------------------------------------------------
-    // Request redraw only
-    // ------------------------------------------------
-
     lv_obj_invalidate(
         screen_obj
     );
 
-    Serial.println(
-        "SCREEN APPLY END"
+    lv_refr_now(
+        lv_disp_get_default()
     );
+
+    current_screen =
+        screen;
 }
 
 // ==================================================
@@ -183,10 +108,6 @@ void screen_manager_init(void)
 
     if (main_screen == NULL)
     {
-        Serial.println(
-            "SCREEN MANAGER ERROR: MAIN IS NULL"
-        );
-
         return;
     }
 
@@ -198,8 +119,8 @@ void screen_manager_init(void)
         main_screen
     );
 
-    Serial.println(
-        "SCREEN MANAGER: MAIN LOADED"
+    lv_refr_now(
+        lv_disp_get_default()
     );
 }
 
@@ -219,14 +140,6 @@ void screen_manager_show(
 
     screen_reload_pending =
         false;
-
-    Serial.print(
-        "SCREEN REQUEST -> "
-    );
-
-    print_screen_name(
-        screen
-    );
 }
 
 // ==================================================
@@ -243,10 +156,6 @@ void screen_manager_reload(void)
 
     screen_reload_pending =
         true;
-
-    Serial.println(
-        "SCREEN REQUEST -> RELOAD"
-    );
 }
 
 // ==================================================
@@ -266,19 +175,11 @@ void screen_manager_process(void)
     bool reload =
         screen_reload_pending;
 
-    // ------------------------------------------------
-    // Clear pending request BEFORE processing
-    // ------------------------------------------------
-
     screen_change_pending =
         false;
 
     screen_reload_pending =
         false;
-
-    // ------------------------------------------------
-    // Ignore same screen unless reload requested
-    // ------------------------------------------------
 
     if (
         !reload &&
@@ -286,16 +187,8 @@ void screen_manager_process(void)
         current_screen
     )
     {
-        Serial.println(
-            "SCREEN PROCESS -> SAME SCREEN"
-        );
-
         return;
     }
-
-    Serial.println(
-        "SCREEN PROCESS"
-    );
 
     load_screen_now(
         requested_screen

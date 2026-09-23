@@ -31,7 +31,7 @@ TFT_eSPI tft =
 static lv_disp_draw_buf_t draw_buf;
 
 static lv_color_t buf1[
-    SCREEN_WIDTH * 5
+    SCREEN_WIDTH * 10
 ];
 
 // ==================================================
@@ -217,6 +217,50 @@ void setup()
     // --------------------------------------------------
 
     ui_init();
+
+    // --------------------------------------------------
+    // LED diagnostic style
+    // Keep the LED visible, but disable complex drawing
+    // features before screen_manager_init() forces a redraw.
+    // --------------------------------------------------
+
+    if (objects.obj0 != NULL)
+    {
+        lv_obj_set_style_radius(
+            objects.obj0,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_shadow_width(
+            objects.obj0,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_shadow_spread(
+            objects.obj0,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_border_width(
+            objects.obj0,
+            0,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+
+        lv_obj_set_style_bg_opa(
+            objects.obj0,
+            LV_OPA_COVER,
+            LV_PART_MAIN |
+            LV_STATE_DEFAULT
+        );
+    }
 
     // --------------------------------------------------
     // Initialize screen manager
