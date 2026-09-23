@@ -3180,4 +3180,3 @@ void tasks_run(void)
     // Update status LED
     led_task();
 }
-
